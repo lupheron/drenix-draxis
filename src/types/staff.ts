@@ -26,6 +26,14 @@ export type Department = {
   label: string;
 };
 
+export type EmployeeCharge = {
+  id: string;
+  employeeId: string;
+  date: string;
+  amount: number;
+  description?: string;
+};
+
 export type StaffDailyLog = {
   date: string;
   attendance: AttendanceStatus;
@@ -40,7 +48,6 @@ export type StaffDailyLog = {
   hired: number;
   onProcess: number;
   breakWarnings: number;
-  charges: number;
 };
 
 export type PerformanceMetrics = {
@@ -61,21 +68,69 @@ export type PerformanceMetrics = {
   score: number;
 };
 
+/** Matches Laravel `users` table profile fields */
 export type Employee = {
   id: string;
-  name: string;
-  departmentId: string;
-  birthday: string;
-  joinedDate: string;
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+  joinedAt: string;
   shift: EmployeeShift;
   shiftTime: string;
   salary: number;
   grade: EmployeeGrade;
   status: EmployeeStatus;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  gender: string;
+  department: string;
+  position: string;
+  company: string;
   dailyLogs: StaffDailyLog[];
+  chargeEntries: EmployeeCharge[];
 };
 
 export type EmployeeWithPerformance = Employee & {
   performance: PerformanceMetrics;
   rank: number;
 };
+
+/** Payload sent to Laravel UsersController — no score/charges here */
+export type UserPayload = {
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+  joinedAt: string;
+  shift: EmployeeShift;
+  salary: number;
+  grade: EmployeeGrade;
+  status: EmployeeStatus;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  gender: string;
+  department: string;
+  position: string;
+  company: string;
+};
+
+export type UpdateEmployeePayload = UserPayload;
+
+export type CreateEmployeePayload = UserPayload;
+
+export type CreateChargePayload = {
+  date: string;
+  amount: number;
+  description?: string;
+};
+
+export function getEmployeeFullName(employee: Pick<Employee, "firstName" | "lastName">): string {
+  return `${employee.firstName} ${employee.lastName}`.trim();
+}

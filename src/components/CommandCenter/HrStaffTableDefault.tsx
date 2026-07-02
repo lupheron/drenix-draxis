@@ -1,6 +1,8 @@
 import type { EmployeeWithPerformance } from "@/types/staff";
+import { getEmployeeFullName } from "@/types/staff";
 import AttendanceBadgeDefault from "@/components/UI/AttendanceBadgeDefault";
 import GradeBadgeDefault from "@/components/UI/GradeBadgeDefault";
+import StaffRowActionsDefault from "@/components/UI/StaffRowActionsDefault";
 import {
   formatCurrency,
   formatDate,
@@ -12,6 +14,9 @@ import { cn } from "@/utils/cn";
 
 type HrStaffTableDefaultProps = {
   employees: EmployeeWithPerformance[];
+  onEdit: (employee: EmployeeWithPerformance) => void;
+  onWriteCharge: (employee: EmployeeWithPerformance) => void;
+  onDelete: (employee: EmployeeWithPerformance) => void;
 };
 
 const HEADERS = [
@@ -35,14 +40,18 @@ const HEADERS = [
   "Break Warnings",
   "Charges",
   "Salary",
+  "Actions",
 ] as const;
 
 export default function HrStaffTableDefault({
   employees,
+  onEdit,
+  onWriteCharge,
+  onDelete,
 }: HrStaffTableDefaultProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[2200px] text-left text-sm">
+      <table className="w-full min-w-[2400px] text-left text-sm">
         <thead>
           <tr className="border-b border-border bg-surface-elevated">
             {HEADERS.map((header) => (
@@ -79,7 +88,7 @@ export default function HrStaffTableDefault({
                   #{employee.rank}
                 </td>
                 <td className="px-3 py-3 text-foreground whitespace-nowrap">
-                  {employee.name}
+                  {getEmployeeFullName(employee)}
                 </td>
                 <td className="px-3 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
                   {employee.shiftTime}
@@ -90,7 +99,7 @@ export default function HrStaffTableDefault({
                   />
                 </td>
                 <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
-                  {formatDate(employee.joinedDate)}
+                  {formatDate(employee.joinedAt)}
                 </td>
                 <td className="px-3 py-3 font-mono text-muted-foreground">
                   {employee.performance.callsMade}
@@ -146,6 +155,13 @@ export default function HrStaffTableDefault({
                 </td>
                 <td className="px-3 py-3 font-mono text-foreground whitespace-nowrap">
                   {formatCurrency(employee.salary)}
+                </td>
+                <td className="px-3 py-3">
+                  <StaffRowActionsDefault
+                    onEdit={() => onEdit(employee)}
+                    onWriteCharge={() => onWriteCharge(employee)}
+                    onDelete={() => onDelete(employee)}
+                  />
                 </td>
               </tr>
             ))

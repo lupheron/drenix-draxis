@@ -1,5 +1,5 @@
 import { DEPARTMENTS } from "@/constants/departments";
-import type { EmployeeWithPerformance } from "@/types/staff";
+import type { Employee, EmployeeWithPerformance } from "@/types/staff";
 import {
   formatCurrency,
   formatDate,
@@ -10,20 +10,24 @@ import {
 } from "@/utils/formatters";
 
 const GENERAL_EXPORT_COLUMNS = [
-  "Rank",
-  "Name",
-  "Department",
-  "Birthday",
-  "Joined",
+  "First Name",
+  "Last Name",
+  "Birth Date",
+  "Joined At",
   "Shift",
   "Salary",
   "Grade",
   "Status",
-  "Score",
-  "Calls",
-  "Recordings",
-  "Hires",
-  "Minutes Spoken",
+  "Phone",
+  "Email",
+  "Address",
+  "City",
+  "State",
+  "Country",
+  "Gender",
+  "Department",
+  "Position",
+  "Company",
 ] as const;
 
 const HR_EXPORT_COLUMNS = [
@@ -66,16 +70,16 @@ function getDepartmentLabel(departmentId: string): string {
 }
 
 export function buildStaffExportRows(
-  employees: EmployeeWithPerformance[],
+  employees: Employee[] | EmployeeWithPerformance[],
   departmentId: string,
 ): string[][] {
   if (departmentId === "hr") {
-    return employees.map((employee) => [
+    return (employees as EmployeeWithPerformance[]).map((employee) => [
       String(employee.rank),
-      employee.name,
+      `${employee.firstName} ${employee.lastName}`.trim(),
       employee.shiftTime,
       formatStatusLabel(employee.performance.attendance),
-      formatDate(employee.joinedDate),
+      formatDate(employee.joinedAt),
       String(employee.performance.callsMade),
       employee.grade,
       String(employee.performance.score),
@@ -95,26 +99,30 @@ export function buildStaffExportRows(
     ]);
   }
 
-  return employees.map((employee) => [
-    String(employee.rank),
-    employee.name,
-    getDepartmentLabel(employee.departmentId),
-    formatDate(employee.birthday),
-    formatDate(employee.joinedDate),
+  return (employees as Employee[]).map((employee) => [
+    employee.firstName,
+    employee.lastName,
+    formatDate(employee.birthDate),
+    formatDate(employee.joinedAt),
     formatShiftLabel(employee.shift),
     formatCurrency(employee.salary),
     employee.grade,
     employee.status === "close_monitor" ? "Close Monitor" : "Normal",
-    String(employee.performance.score),
-    String(employee.performance.callsMade),
-    String(employee.performance.recordingsCount),
-    String(employee.performance.hires),
-    String(employee.performance.minutesSpoken),
+    employee.phone,
+    employee.email,
+    employee.address,
+    employee.city,
+    employee.state,
+    employee.country,
+    employee.gender ? formatStatusLabel(employee.gender) : "",
+    getDepartmentLabel(employee.department),
+    employee.position,
+    employee.company,
   ]);
 }
 
 export function exportStaffToExcel(
-  employees: EmployeeWithPerformance[],
+  employees: Employee[] | EmployeeWithPerformance[],
   from: string,
   to: string,
   departmentId: string,

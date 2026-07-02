@@ -1,14 +1,6 @@
 import PageHeaderDefault from "@/components/UI/PageHeaderDefault";
 import SectionPanelDefault from "@/components/UI/SectionPanelDefault";
-import StatusBadgeDefault from "@/components/UI/StatusBadgeDefault";
-import { MOCK_ALERTS } from "@/constants/mock-data";
-import { formatRelativeTime } from "@/utils/formatters";
-
-const severityVariant = {
-  critical: "danger",
-  warning: "warning",
-  info: "muted",
-} as const;
+import EmptyStateDefault from "@/components/UI/EmptyStateDefault";
 
 export default function AlertsPage() {
   return (
@@ -23,30 +15,7 @@ export default function AlertsPage() {
           title="Active Exceptions"
           description="Unresolved alerts requiring review or acknowledgment."
         >
-          <ul className="divide-y divide-border border border-border">
-            {MOCK_ALERTS.map((alert) => (
-              <li
-                key={alert.id}
-                className="flex flex-col gap-3 bg-background/20 px-5 py-5 sm:flex-row sm:items-start sm:justify-between"
-              >
-                <div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <p className="text-sm text-foreground">{alert.title}</p>
-                    <StatusBadgeDefault
-                      status={alert.severity}
-                      variant={severityVariant[alert.severity]}
-                    />
-                  </div>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                    {alert.message}
-                  </p>
-                  <p className="mt-3 text-[10px] uppercase tracking-[0.15em] text-muted">
-                    {alert.source} · {formatRelativeTime(alert.timestamp)}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <EmptyStateDefault message="No alerts loaded. Connect your API to receive live signals." />
         </SectionPanelDefault>
 
         <SectionPanelDefault

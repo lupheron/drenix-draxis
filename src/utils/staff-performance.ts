@@ -5,6 +5,7 @@ import type {
   PerformancePeriod,
   StaffDailyLog,
 } from "@/types/staff";
+import { sumChargesInRange } from "@/utils/charges";
 
 const PERIOD_DAYS: Record<Exclude<PerformancePeriod, "custom">, number> = {
   day: 1,
@@ -32,7 +33,10 @@ export function calculatePerformanceScore(metrics: {
   return Math.min(100, Math.round(raw / 10));
 }
 
-function aggregateLogs(logs: StaffDailyLog[]): PerformanceMetrics {
+function aggregateLogs(
+  logs: StaffDailyLog[],
+  chargeTotal: number,
+): PerformanceMetrics {
   const totals = logs.reduce(
     (acc, log) => ({
       callsMade: acc.callsMade + log.callsMade,
@@ -46,7 +50,6 @@ function aggregateLogs(logs: StaffDailyLog[]): PerformanceMetrics {
       hired: acc.hired + log.hired,
       onProcess: acc.onProcess + log.onProcess,
       breakWarnings: acc.breakWarnings + log.breakWarnings,
-      charges: acc.charges + log.charges,
     }),
     {
       callsMade: 0,
@@ -60,7 +63,6 @@ function aggregateLogs(logs: StaffDailyLog[]): PerformanceMetrics {
       hired: 0,
       onProcess: 0,
       breakWarnings: 0,
-      charges: 0,
     },
   );
 
@@ -83,7 +85,7 @@ function aggregateLogs(logs: StaffDailyLog[]): PerformanceMetrics {
     hired: totals.hired,
     onProcess: totals.onProcess,
     breakWarnings: totals.breakWarnings,
-    charges: Math.round(totals.charges * 100) / 100,
+    charges: chargeTotal,
     hireRate,
     attendance: latestLog?.attendance ?? "on_time",
     score: calculatePerformanceScore({
@@ -99,7 +101,7 @@ function aggregateLogs(logs: StaffDailyLog[]): PerformanceMetrics {
 
 export function getPeriodDateRange(
   period: Exclude<PerformancePeriod, "custom">,
-  referenceDate = new Date("2026-06-19T12:00:00Z"),
+  referenceDate = new Date(),
 ): { from: string; to: string } {
   const to = referenceDate.toISOString().slice(0, 10);
   const fromDate = new Date(referenceDate);
@@ -158,7 +160,9 @@ export function getEmployeePerformance(
   }
 
   const logs = filterLogsByDateRange(employee.dailyLogs, from, to);
-  return aggregateLogs(logs);
+  const chargeTotal = sumChargesInRange(employee.chargeEntries, from, to);
+
+  return aggregateLogs(logs, chargeTotal);
 }
 
 export function rankEmployees(
@@ -170,7 +174,7 @@ export function rankEmployees(
   const filtered =
     departmentId === "all"
       ? employees
-      : employees.filter((employee) => employee.departmentId === departmentId);
+      : employees.filter((employee) => employee.department === departmentId);
 
   const withPerformance = filtered
     .map((employee) => ({

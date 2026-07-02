@@ -3,7 +3,7 @@ import SectionPanelDefault from "@/components/UI/SectionPanelDefault";
 import DataTableDefault from "@/components/UI/DataTableDefault";
 import StatusBadgeDefault from "@/components/UI/StatusBadgeDefault";
 import InputDefault from "@/components/FormItems/Input/InputDefault";
-import { MOCK_FLEET } from "@/constants/mock-data";
+import type { FleetUnit } from "@/types/logistics";
 import { formatRelativeTime } from "@/utils/formatters";
 
 const fleetStatusVariant = {
@@ -12,6 +12,8 @@ const fleetStatusVariant = {
   maintenance: "warning",
   offline: "danger",
 } as const;
+
+const fleetData: FleetUnit[] = [];
 
 export default function FleetPage() {
   return (
@@ -24,13 +26,14 @@ export default function FleetPage() {
       <div className="space-y-6 px-8 py-8">
         <SectionPanelDefault
           title="Unit Registry"
-          description="Example fleet table for Meridian Freight Group."
+          description="Fleet units will appear here once your API is connected."
         >
           <div className="mb-5 max-w-sm">
             <InputDefault label="Filter units" placeholder="Identifier, location..." />
           </div>
           <DataTableDefault
-            data={MOCK_FLEET}
+            data={fleetData}
+            emptyMessage="No fleet units loaded. Connect your API to populate this table."
             columns={[
               {
                 key: "identifier",

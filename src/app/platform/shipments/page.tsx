@@ -2,7 +2,7 @@ import PageHeaderDefault from "@/components/UI/PageHeaderDefault";
 import SectionPanelDefault from "@/components/UI/SectionPanelDefault";
 import DataTableDefault from "@/components/UI/DataTableDefault";
 import StatusBadgeDefault from "@/components/UI/StatusBadgeDefault";
-import { MOCK_SHIPMENTS } from "@/constants/mock-data";
+import type { Shipment } from "@/types/logistics";
 
 const shipmentStatusVariant = {
   in_transit: "default",
@@ -11,6 +11,8 @@ const shipmentStatusVariant = {
   pending: "muted",
   exception: "danger",
 } as const;
+
+const shipmentData: Shipment[] = [];
 
 export default function ShipmentsPage() {
   return (
@@ -23,10 +25,11 @@ export default function ShipmentsPage() {
       <div className="space-y-6 px-8 py-8">
         <SectionPanelDefault
           title="Shipment Ledger"
-          description="All active and recent movements."
+          description="Shipments will appear here once your API is connected."
         >
           <DataTableDefault
-            data={MOCK_SHIPMENTS}
+            data={shipmentData}
+            emptyMessage="No shipments loaded. Connect your API to populate this table."
             columns={[
               {
                 key: "reference",
