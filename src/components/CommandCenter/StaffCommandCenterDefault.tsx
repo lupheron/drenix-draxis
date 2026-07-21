@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import PageHeaderDefault from "@/components/UI/PageHeaderDefault";
+import EyeLoadingDefault from "@/components/UI/EyeLoadingDefault";
 import DepartmentSwitcherDefault from "@/components/UI/DepartmentSwitcherDefault";
 import PeriodSwitcherDefault from "@/components/UI/PeriodSwitcherDefault";
 import HrStaffTableDefault from "@/components/CommandCenter/HrStaffTableDefault";
@@ -250,9 +251,7 @@ export default function StaffCommandCenterDefault() {
 
       <div className="space-y-6 px-8 py-8">
         {isLoading ? (
-          <p className="border border-border bg-surface px-4 py-3 text-sm text-muted-foreground">
-            Loading staff from API...
-          </p>
+          <EyeLoadingDefault fullPage size="lg" label="Loading staff" />
         ) : null}
 
         {loadError ? (

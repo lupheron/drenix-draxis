@@ -1,6 +1,8 @@
+import { authStorage } from "@/lib/auth-storage";
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ??
-  "http://localhost:8000/api";
+  "http://127.0.0.1:8000/api";
 
 type ApiErrorBody = {
   message?: string;
@@ -23,11 +25,14 @@ export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const token = authStorage.getToken();
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   });
@@ -38,6 +43,10 @@ export async function apiRequest<T>(
       body = (await response.json()) as ApiErrorBody;
     } catch {
       body = {};
+    }
+
+    if (response.status === 401 && typeof window !== "undefined") {
+      authStorage.clear();
     }
 
     throw new ApiError(

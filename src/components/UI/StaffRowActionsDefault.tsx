@@ -2,8 +2,9 @@ import { cn } from "@/utils/cn";
 
 type StaffRowActionsDefaultProps = {
   onEdit: () => void;
-  onWriteCharge: () => void;
+  onWriteCharge?: () => void;
   onDelete: () => void;
+  hideCharges?: boolean;
 };
 
 type ActionConfig = {
@@ -18,6 +19,7 @@ export default function StaffRowActionsDefault({
   onEdit,
   onWriteCharge,
   onDelete,
+  hideCharges = true,
 }: StaffRowActionsDefaultProps) {
   const actions: ActionConfig[] = [
     {
@@ -26,16 +28,20 @@ export default function StaffRowActionsDefault({
       emoji: "✏️",
       onClick: onEdit,
       className:
-        "border-sky-500/30 bg-sky-500/10 text-sky-300 hover:border-sky-400/50 hover:bg-sky-500/20",
+        "border-warning/35 bg-warning/15 text-warning hover:border-warning/50 hover:bg-warning/25",
     },
-    {
-      key: "charges",
-      label: "Charges",
-      emoji: "💰",
-      onClick: onWriteCharge,
-      className:
-        "border-amber-500/30 bg-amber-500/10 text-amber-300 hover:border-amber-400/50 hover:bg-amber-500/20",
-    },
+    ...(hideCharges || !onWriteCharge
+      ? []
+      : [
+          {
+            key: "charges",
+            label: "Charges",
+            emoji: "💰",
+            onClick: onWriteCharge,
+            className:
+              "border-amber-500/30 bg-amber-500/10 text-amber-300 hover:border-amber-400/50 hover:bg-amber-500/20",
+          },
+        ]),
     {
       key: "delete",
       label: "Delete",

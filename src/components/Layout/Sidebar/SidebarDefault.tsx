@@ -63,15 +63,6 @@ export default function SidebarDefault() {
           </div>
         ))}
       </nav>
-
-      <div className="border-t border-border px-6 py-5">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-muted">
-          Meridian Freight Group
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Client environment · v0.1
-        </p>
-      </div>
     </aside>
   );
 }

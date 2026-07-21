@@ -1,5 +1,5 @@
-import StaffCommandCenterDefault from "@/components/CommandCenter/StaffCommandCenterDefault";
+import { redirect } from "next/navigation";
 
-export default function CommandCenterPage() {
-  return <StaffCommandCenterDefault />;
+export default function PlatformRedirectPage() {
+  redirect("/command-center");
 }

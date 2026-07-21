@@ -15,6 +15,10 @@
   --danger: #ef4444;
   --warning: #f59e0b;
   --success: #22c55e;
+  --scrollbar-size: 6px;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.14);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.28);
+  --scrollbar-track: rgba(255, 255, 255, 0.03);
 }
 
 @theme inline {
@@ -50,6 +54,29 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
+@layer base {
+  button:not(:disabled),
+  a[href],
+  [role="button"]:not([aria-disabled="true"]),
+  label[for],
+  select,
+  summary,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="file"],
+  input[type="date"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
 ::selection {
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
@@ -63,6 +90,30 @@ body {
   100% {
     transform: scaleY(1);
     opacity: 1;
+  }
+}
+
+/* Loading loop: open oversized → slight close → open big again */
+@keyframes eye-loading-breathe {
+  0% {
+    transform: scale(1.05) scaleY(0.22);
+    opacity: 0.5;
+  }
+  28% {
+    transform: scale(1.28) scaleY(1.28);
+    opacity: 1;
+  }
+  48% {
+    transform: scale(1.06) scaleY(0.58);
+    opacity: 0.78;
+  }
+  72% {
+    transform: scale(1.22) scaleY(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.05) scaleY(0.22);
+    opacity: 0.5;
   }
 }
 
@@ -91,10 +142,48 @@ body {
   animation: eye-open 2.4s ease-out forwards;
 }
 
+.animate-eye-loading {
+  animation: eye-loading-breathe 2.4s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
 .animate-fade-up {
   animation: fade-up 0.8s ease-out forwards;
 }
 
 .animate-pulse-glow {
   animation: pulse-glow 4s ease-in-out infinite;
+}
+
+/* Custom scrollbars — thin, dark, matches DRAXIS theme */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }

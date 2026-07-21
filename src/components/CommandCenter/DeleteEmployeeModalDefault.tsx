@@ -42,9 +42,9 @@ export default function DeleteEmployeeModalDefault({
         </ButtonDefault>
         <ButtonDefault
           type="button"
+          variant="danger"
           onClick={() => void handleConfirm()}
           disabled={loading}
-          className="bg-danger text-white hover:bg-danger/90"
         >
           {loading ? "Deleting..." : "Delete"}
         </ButtonDefault>

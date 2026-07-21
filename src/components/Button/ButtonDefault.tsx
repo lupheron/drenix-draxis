@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import Link from "next/link";
 import { cn } from "@/utils/cn";
 
-type ButtonVariant = "primary" | "ghost" | "outline";
+type ButtonVariant = "primary" | "ghost" | "outline" | "warning" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
 type ButtonDefaultProps = {
@@ -20,6 +20,10 @@ const variantStyles: Record<ButtonVariant, string> = {
     "bg-transparent text-muted-foreground hover:text-foreground hover:bg-accent-dim border border-transparent",
   outline:
     "bg-transparent text-foreground border border-border-strong hover:border-white/25 hover:bg-accent-dim",
+  warning:
+    "bg-warning/15 text-warning border border-warning/35 hover:bg-warning/25 hover:border-warning/50",
+  danger:
+    "bg-danger/15 text-danger border border-danger/35 hover:bg-danger/25 hover:border-danger/50",
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -37,7 +41,7 @@ export default function ButtonDefault({
   ...props
 }: ButtonDefaultProps) {
   const classes = cn(
-    "inline-flex items-center justify-center font-medium transition-colors duration-200 disabled:pointer-events-none disabled:opacity-40",
+    "inline-flex cursor-pointer items-center justify-center font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-40",
     variantStyles[variant],
     sizeStyles[size],
     className,

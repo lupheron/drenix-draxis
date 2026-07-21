@@ -20,12 +20,26 @@ export function formatStatusLabel(status: string): string {
 }
 
 export function formatDate(isoDate: string): string {
+  const date = parseDateOnly(isoDate);
+  if (!date) return "—";
+
   return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
     timeZone: "UTC",
-  }).format(new Date(`${isoDate}T12:00:00Z`));
+  }).format(date);
+}
+
+/** Accepts YYYY-MM-DD or ISO datetime; returns null if unusable. */
+function parseDateOnly(value: string): Date | null {
+  if (!value || typeof value !== "string") return null;
+
+  const day = value.trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+
+  const date = new Date(`${day}T12:00:00Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 export function formatCurrency(amount: number): string {
