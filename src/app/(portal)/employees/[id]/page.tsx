@@ -4,12 +4,18 @@ import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import ButtonDefault from "@/components/Button/ButtonDefault";
 import EyeLoadingDefault from "@/components/UI/EyeLoadingDefault";
+import CredentialsModal from "@/components/Portal/CredentialsModal";
 import EmployeeForm from "@/components/Portal/EmployeeForm";
 import { useDeleteUser } from "@/hooks/useDeleteUser";
+import { useSetPortalCredentials } from "@/hooks/useEmployeeMutations";
 import { useUpdateUser } from "@/hooks/useUpdateUser";
 import { useUser } from "@/hooks/useUsers";
 import { authStorage } from "@/lib/auth-storage";
-import type { EmployeePayload } from "@/lib/types";
+import type {
+  ApproveCredentials,
+  EmployeePayload,
+  PortalCredentialsPayload,
+} from "@/lib/types";
 import { formatApiError } from "@/utils/portal-errors";
 
 type EmployeeDetailPageProps = {
@@ -43,15 +49,36 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
   const { data, isLoading, isError, error } = useUser(id);
   const updateUser = useUpdateUser();
   const deleteUser = useDeleteUser();
+  const portalCreds = useSetPortalCredentials();
 
   const [editing, setEditing] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [issuedPortalCreds, setIssuedPortalCreds] =
+    useState<ApproveCredentials | null>(null);
 
   const employee = data?.data;
 
-  async function handleUpdate(payload: EmployeePayload) {
+  async function handleUpdate(
+    payload: EmployeePayload,
+    portal?: PortalCredentialsPayload | null,
+  ) {
     await updateUser.mutateAsync({ id: employeeId, body: payload });
+    if (portal) {
+      await portalCreds.mutateAsync({ id: employeeId, payload: portal });
+      setIssuedPortalCreds({
+        username: portal.username,
+        password: portal.password,
+      });
+    }
     setEditing(false);
+  }
+
+  async function handleResetPortal(portal: PortalCredentialsPayload) {
+    await portalCreds.mutateAsync({ id: employeeId, payload: portal });
+    setIssuedPortalCreds({
+      username: portal.username,
+      password: portal.password,
+    });
   }
 
   async function handleDelete() {
@@ -95,6 +122,15 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
           submitLabel="Save changes"
           onCancel={() => setEditing(false)}
           onSubmit={handleUpdate}
+          onResetPortalCredentials={handleResetPortal}
+        />
+
+        <CredentialsModal
+          open={Boolean(issuedPortalCreds)}
+          credentials={issuedPortalCreds}
+          title="Client Portal credentials"
+          description="Share these with the employee for the light Client app. The password cannot be retrieved later."
+          onClose={() => setIssuedPortalCreds(null)}
         />
       </div>
     );
@@ -176,11 +212,27 @@ export default function EmployeeDetailPage({ params }: EmployeeDetailPageProps) 
         <DetailField label="City" value={employee.city} />
         <DetailField label="State" value={employee.state} />
         <DetailField label="Country" value={employee.country} />
+        <DetailField
+          label="Client Portal"
+          value={
+            employee.has_portal_access || employee.portal_username
+              ? (employee.portal_username ?? "Enabled")
+              : "Not set"
+          }
+        />
       </section>
 
       <ButtonDefault href="/employees" variant="ghost">
         Back to employees
       </ButtonDefault>
+
+      <CredentialsModal
+        open={Boolean(issuedPortalCreds)}
+        credentials={issuedPortalCreds}
+        title="Client Portal credentials"
+        description="Share these with the employee for the light Client app. The password cannot be retrieved later."
+        onClose={() => setIssuedPortalCreds(null)}
+      />
     </div>
   );
 }

@@ -47,7 +47,7 @@ export default function EyeLoadingDefault({
         className,
       )}
     >
-      <div className="animate-eye-loading origin-center">
+      <div className="origin-center animate-eye-loading will-change-[transform,opacity]">
         <EyeLogo className={inline ? INLINE_SIZE_CLASS[size] : SIZE_CLASS[size]} />
       </div>
       {label ? (

@@ -4,6 +4,7 @@ import { useState } from "react";
 import ModalDefault from "@/components/UI/ModalDefault";
 import ButtonDefault from "@/components/Button/ButtonDefault";
 import InputDefault from "@/components/FormItems/Input/InputDefault";
+import DatePickerDefault from "@/components/FormItems/DatePicker/DatePickerDefault";
 import SelectDefault from "@/components/FormItems/Select/SelectDefault";
 import { DEPARTMENTS } from "@/constants/departments";
 import {
@@ -148,18 +149,16 @@ export default function CreateEmployeeModalDefault({
             Employment
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <InputDefault
+            <DatePickerDefault
               label="Birth Date"
-              type="date"
               value={form.birthDate}
-              onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+              onChange={(value) => setForm({ ...form, birthDate: value })}
               required
             />
-            <InputDefault
+            <DatePickerDefault
               label="Joined At"
-              type="date"
               value={form.joinedAt}
-              onChange={(e) => setForm({ ...form, joinedAt: e.target.value })}
+              onChange={(value) => setForm({ ...form, joinedAt: value })}
               required
             />
           </div>

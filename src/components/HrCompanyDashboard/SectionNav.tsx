@@ -4,6 +4,8 @@ import { cn } from "@/utils/cn";
 
 export type HrCompanySection =
   | "analytics"
+  | "lead-management"
+  | "driver-database"
   | "ringcentral"
   | "monday"
   | "people";
@@ -12,11 +14,25 @@ const SECTIONS: {
   id: HrCompanySection;
   label: string;
   hint: string;
+  /** When set, section only appears for this company */
+  companyOnly?: "JM";
 }[] = [
   {
     id: "analytics",
     label: "Analytics",
     hint: "Company overview",
+  },
+  {
+    id: "lead-management",
+    label: "Lead Management",
+    hint: "Sheets · hire funnel",
+    companyOnly: "JM",
+  },
+  {
+    id: "driver-database",
+    label: "Driver Database",
+    hint: "Search · Monday history",
+    companyOnly: "JM",
   },
   {
     id: "ringcentral",
@@ -38,15 +54,21 @@ const SECTIONS: {
 type SectionNavProps = {
   active: HrCompanySection;
   onChange: (section: HrCompanySection) => void;
+  company?: string;
 };
 
 export default function HrCompanySectionNav({
   active,
   onChange,
+  company,
 }: SectionNavProps) {
+  const visibleSections = SECTIONS.filter(
+    (section) => !section.companyOnly || section.companyOnly === company,
+  );
+
   return (
     <nav className="flex flex-wrap gap-1 border border-border bg-surface p-1">
-      {SECTIONS.map((section) => {
+      {visibleSections.map((section) => {
         const isActive = section.id === active;
         return (
           <button
@@ -114,6 +136,9 @@ export const hrChartColors = {
   hired: "#34d399",
   loaded: "#38bdf8",
   rejected: "#f472b6",
+  texts: "#38bdf8",
+  textsSent: "#2dd4bf",
+  textsReceived: "#a78bfa",
   grid: "rgba(255,255,255,0.06)",
   muted: "#737373",
   foreground: "#f0f0f0",

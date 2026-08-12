@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import ModalDefault from "@/components/UI/ModalDefault";
 import ButtonDefault from "@/components/Button/ButtonDefault";
 import InputDefault from "@/components/FormItems/Input/InputDefault";
+import DatePickerDefault from "@/components/FormItems/DatePicker/DatePickerDefault";
 import type { CreateChargePayload, Employee } from "@/types/staff";
 import { getEmployeeFullName } from "@/types/staff";
 
@@ -79,11 +80,10 @@ export default function WriteChargeModalDefault({
       onClose={onClose}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <InputDefault
+        <DatePickerDefault
           label="Charge Date"
-          type="date"
           value={date}
-          onChange={(event) => setDate(event.target.value)}
+          onChange={setDate}
           hint="This charge applies only if the date falls inside your top filter range."
           required
         />

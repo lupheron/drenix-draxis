@@ -2,9 +2,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createEmployee,
   deleteEmployee,
+  setPortalCredentials,
   updateEmployee,
 } from "@/lib/api/employees";
-import type { EmployeePayload } from "@/lib/types";
+import type { EmployeePayload, PortalCredentialsPayload } from "@/lib/types";
 import { queryKeys } from "@/hooks/query-keys";
 
 export function useCreateEmployee() {
@@ -47,6 +48,26 @@ export function useDeleteEmployee() {
       queryClient.removeQueries({ queryKey: queryKeys.user(id) });
       void queryClient.invalidateQueries({ queryKey: ["users"] });
       void queryClient.invalidateQueries({ queryKey: ["companies"] });
+    },
+  });
+}
+
+export function useSetPortalCredentials() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number | string;
+      payload: PortalCredentialsPayload;
+    }) => setPortalCredentials(id, payload),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.user(variables.id),
+      });
+      void queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 }

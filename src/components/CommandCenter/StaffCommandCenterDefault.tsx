@@ -15,6 +15,7 @@ import GradeBadgeDefault from "@/components/UI/GradeBadgeDefault";
 import StatCardDefault from "@/components/UI/StatCardDefault";
 import ButtonDefault from "@/components/Button/ButtonDefault";
 import InputDefault from "@/components/FormItems/Input/InputDefault";
+import DatePickerDefault from "@/components/FormItems/DatePicker/DatePickerDefault";
 import { DEPARTMENTS } from "@/constants/departments";
 import {
   useCreateUser,
@@ -289,17 +290,16 @@ export default function StaffCommandCenterDefault() {
 
         {isHrView && period === "custom" ? (
           <div className="grid gap-4 border border-border bg-surface p-5 sm:grid-cols-2">
-            <InputDefault
+            <DatePickerDefault
               label="From"
-              type="date"
               value={customFrom}
-              onChange={(event) => setCustomFrom(event.target.value)}
+              onChange={setCustomFrom}
             />
-            <InputDefault
+            <DatePickerDefault
               label="To"
-              type="date"
               value={customTo}
-              onChange={(event) => setCustomTo(event.target.value)}
+              onChange={setCustomTo}
+              min={customFrom}
             />
           </div>
         ) : null}
@@ -374,18 +374,17 @@ export default function StaffCommandCenterDefault() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <InputDefault
+              <DatePickerDefault
                 label="Export from"
-                type="date"
                 value={exportFrom}
-                onChange={(event) => setExportFrom(event.target.value)}
+                onChange={setExportFrom}
                 wrapperClassName="min-w-36"
               />
-              <InputDefault
+              <DatePickerDefault
                 label="Export to"
-                type="date"
                 value={exportTo}
-                onChange={(event) => setExportTo(event.target.value)}
+                onChange={setExportTo}
+                min={exportFrom}
                 wrapperClassName="min-w-36"
               />
               <ButtonDefault

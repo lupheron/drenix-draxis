@@ -32,26 +32,31 @@ export default function MondaySection({ data, employees }: Props) {
           label: "Leads",
           data: employees.map((e) => e.metrics?.leads ?? 0),
           backgroundColor: hrChartColors.leads,
+          stack: "monday",
         },
         {
           label: "Follow-up",
           data: employees.map((e) => e.metrics?.follow_up ?? 0),
           backgroundColor: hrChartColors.followUp,
+          stack: "monday",
         },
         {
           label: "Hired",
           data: employees.map((e) => e.metrics?.hires ?? 0),
           backgroundColor: hrChartColors.hired,
+          stack: "monday",
         },
         {
           label: "Loaded",
           data: employees.map((e) => e.metrics?.loaded ?? 0),
           backgroundColor: hrChartColors.loaded,
+          stack: "monday",
         },
         {
           label: "Rejected",
           data: employees.map((e) => e.metrics?.rejected ?? 0),
           backgroundColor: hrChartColors.rejected,
+          stack: "monday",
         },
       ],
     }),
@@ -92,11 +97,13 @@ export default function MondaySection({ data, employees }: Props) {
           label: "Leads",
           data: employees.map((e) => e.metrics?.leads ?? 0),
           backgroundColor: hrChartColors.leads,
+          stack: "conversion",
         },
         {
           label: "Loaded",
           data: employees.map((e) => e.metrics?.loaded ?? 0),
           backgroundColor: hrChartColors.loaded,
+          stack: "conversion",
         },
       ],
     }),
@@ -147,7 +154,7 @@ export default function MondaySection({ data, employees }: Props) {
           title="Leads vs loaded by user"
           description="Volume vs real hire signal"
         >
-          <Bar data={conversion} options={barOptions(false)} />
+          <Bar data={conversion} options={barOptions(true)} />
         </ChartPanel>
       </div>
 
@@ -155,7 +162,7 @@ export default function MondaySection({ data, employees }: Props) {
         title="Monday metrics by user"
         description="Full pipeline breakdown per person"
       >
-        <Bar data={byUser} options={barOptions(false)} />
+        <Bar data={byUser} options={barOptions(true)} />
       </ChartPanel>
     </div>
   );

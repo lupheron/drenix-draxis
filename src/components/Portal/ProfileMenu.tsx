@@ -15,8 +15,9 @@ export default function ProfileMenu() {
   const panelRef = useRef<HTMLDivElement>(null);
   const logout = useLogout();
 
-  const isAdmin = authStorage.isAdmin();
   const isSuperAdmin = authStorage.isSuperAdmin();
+  const isAdmin = authStorage.isAdmin();
+  const canManageEmployees = authStorage.canManageEmployees();
   const admin = authStorage.getAdmin();
   const guestProfile = authStorage.getAccessProfile();
   const { data: pending } = usePendingRequests();
@@ -83,8 +84,13 @@ export default function ProfileMenu() {
               </MenuLink>
               <MenuLink href="/profile/accepted">Accepted users</MenuLink>
               {isSuperAdmin ? (
-                <MenuLink href="/profile/admins">Manage admins</MenuLink>
+                <MenuLink href="/profile/admins">Manage admins / Sessions</MenuLink>
               ) : null}
+              <div className="my-1 h-px bg-border" />
+            </>
+          ) : canManageEmployees ? (
+            <>
+              <MenuLink href="/employees/new">Add employee</MenuLink>
               <div className="my-1 h-px bg-border" />
             </>
           ) : null}

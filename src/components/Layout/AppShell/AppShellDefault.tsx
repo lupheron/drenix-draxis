@@ -18,9 +18,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-surface">
-        <div className="border-b border-border px-6 py-6">
+    <div className="flex h-dvh overflow-hidden bg-background">
+      <aside className="flex h-full w-64 shrink-0 flex-col border-r border-border bg-surface">
+        <div className="shrink-0 border-b border-border px-6 py-6">
           <Link href={isAdmin ? "/command-center" : "/command-center"} className="group flex items-center gap-3">
             <EyeLogo className="h-8 w-8 text-foreground/70 transition-colors group-hover:text-foreground" />
             <div>
@@ -34,7 +34,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-5">
           <NavLink href="/command-center" active={pathname.startsWith("/command-center")}>
             Command Center
           </NavLink>
@@ -71,27 +71,37 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         </NavLink>
                       </li>
                     ))}
+                    <li>
+                      <NavLink
+                        href="/driver-database?company=JM"
+                        active={pathname.startsWith("/driver-database")}
+                        nested
+                      >
+                        Driver DB
+                      </NavLink>
+                    </li>
                   </ul>
                 ) : null}
               </div>
             </>
           ) : null}
 
-          {canAccessAnalytics ? (
+          {/* CEO guests: lead dashboard lives under JM HR for admins */}
+          {canAccessAnalytics && !isAdmin ? (
             <NavLink href="/analytics" active={pathname.startsWith("/analytics")}>
-              Analytics
+              Lead Management
             </NavLink>
           ) : null}
         </nav>
 
-        <div className="relative z-20 overflow-visible border-t border-border px-4 py-4">
+        <div className="relative z-20 shrink-0 overflow-visible border-t border-border px-4 py-4">
           <ProfileMenu />
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

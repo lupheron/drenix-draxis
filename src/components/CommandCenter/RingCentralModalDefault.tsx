@@ -4,6 +4,7 @@ import { useState } from "react";
 import ModalDefault from "@/components/UI/ModalDefault";
 import ButtonDefault from "@/components/Button/ButtonDefault";
 import EyeLoadingDefault from "@/components/UI/EyeLoadingDefault";
+import RingCentralMessagesPanel from "@/components/CommandCenter/RingCentralMessagesPanel";
 import {
   useRingCentralCalls,
   useRingCentralOverview,
@@ -20,6 +21,8 @@ const CALL_TYPES: { id: CallType | ""; label: string }[] = [
   { id: "voicemail", label: "Voicemail" },
   { id: "other", label: "Other" },
 ];
+
+type TabId = "calls" | "texts";
 
 type RingCentralModalProps = {
   open: boolean;
@@ -38,14 +41,15 @@ export default function RingCentralModalDefault({
   to,
   onClose,
 }: RingCentralModalProps) {
+  const [tab, setTab] = useState<TabId>("calls");
   const [callType, setCallType] = useState<CallType | "">("");
   const [page, setPage] = useState(1);
 
-  const overview = useRingCentralOverview(userId, from, to, open);
+  const overview = useRingCentralOverview(userId, from, to, open && tab === "calls");
   const calls = useRingCentralCalls(
     userId,
     { from, to, type: callType, page, per_page: 50 },
-    open,
+    open && tab === "calls",
   );
 
   const summary = overview.data?.summary;
@@ -68,11 +72,41 @@ export default function RingCentralModalDefault({
       description={`${formatDate(from)} — ${formatDate(to)} · synced from API (not live RC)`}
       onClose={onClose}
       resizable
-      defaultWidth={980}
-      defaultHeight={740}
+      defaultWidth={1040}
+      defaultHeight={780}
       className="max-w-none"
     >
-      {overview.isLoading ? (
+      <div className="mb-5 flex gap-1 border border-border bg-surface p-1">
+        {(
+          [
+            { id: "calls", label: "Calls" },
+            { id: "texts", label: "Texts" },
+          ] as const
+        ).map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setTab(item.id)}
+            className={cn(
+              "flex-1 px-3 py-2 text-[11px] font-medium uppercase tracking-[0.14em] transition-colors",
+              tab === item.id
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:bg-accent-dim hover:text-foreground",
+            )}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "texts" ? (
+        <RingCentralMessagesPanel
+          userId={userId}
+          from={from}
+          to={to}
+          enabled={open}
+        />
+      ) : overview.isLoading ? (
         <EyeLoadingDefault size="md" label="Loading RingCentral" />
       ) : overview.isError ? (
         <p className="text-sm text-danger">Could not load RingCentral summary.</p>

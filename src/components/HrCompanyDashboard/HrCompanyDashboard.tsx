@@ -1,15 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PageHeaderDefault from "@/components/UI/PageHeaderDefault";
 import PeriodSwitcherDefault from "@/components/UI/PeriodSwitcherDefault";
-import InputDefault from "@/components/FormItems/Input/InputDefault";
+import DatePickerDefault from "@/components/FormItems/DatePicker/DatePickerDefault";
 import EyeLoadingDefault from "@/components/UI/EyeLoadingDefault";
 import RingCentralModalDefault from "@/components/CommandCenter/RingCentralModalDefault";
 import HrCompanySectionNav, {
   type HrCompanySection,
 } from "@/components/HrCompanyDashboard/SectionNav";
 import AnalyticsSection from "@/components/HrCompanyDashboard/AnalyticsSection";
+import LeadManagementSection from "@/components/HrCompanyDashboard/LeadManagementSection";
+import DriverDatabaseSection from "@/components/HrCompanyDashboard/DriverDatabaseSection";
 import RingCentralSection from "@/components/HrCompanyDashboard/RingCentralSection";
 import MondaySection from "@/components/HrCompanyDashboard/MondaySection";
 import PeopleSection from "@/components/HrCompanyDashboard/PeopleSection";
@@ -56,16 +58,22 @@ export default function HrCompanyDashboard({ company }: Props) {
 
   function changeSection(next: HrCompanySection) {
     setSection(next);
-    if (next !== "people") {
-      // keep selection so returning to People restores view
-    }
   }
+
+  useEffect(() => {
+    if (
+      (section === "lead-management" || section === "driver-database") &&
+      company !== "JM"
+    ) {
+      setSection("analytics");
+    }
+  }, [company, section]);
 
   return (
     <>
       <PageHeaderDefault
         title={`Human Resources — ${company}`}
-        description={`${getCompanyLabel(company)} · company dashboard, RingCentral, Monday.com, and people`}
+        description={`${getCompanyLabel(company)} · company dashboard${company === "JM" ? ", lead management" : ""}, RingCentral, Monday.com, and people`}
       />
 
       <div className="space-y-6 px-8 py-8">
@@ -88,24 +96,31 @@ export default function HrCompanyDashboard({ company }: Props) {
 
         {period === "custom" ? (
           <div className="grid gap-4 border border-border bg-surface p-5 sm:grid-cols-2">
-            <InputDefault
+            <DatePickerDefault
               label="From"
-              type="date"
               value={customFrom}
-              onChange={(event) => setCustomFrom(event.target.value)}
+              onChange={setCustomFrom}
             />
-            <InputDefault
+            <DatePickerDefault
               label="To"
-              type="date"
               value={customTo}
-              onChange={(event) => setCustomTo(event.target.value)}
+              onChange={setCustomTo}
+              min={customFrom}
             />
           </div>
         ) : null}
 
-        <HrCompanySectionNav active={section} onChange={changeSection} />
+        <HrCompanySectionNav
+          active={section}
+          onChange={changeSection}
+          company={company}
+        />
 
-        {isLoading ? (
+        {section === "lead-management" && company === "JM" ? (
+          <LeadManagementSection />
+        ) : section === "driver-database" && company === "JM" ? (
+          <DriverDatabaseSection company={company} lockCompany />
+        ) : isLoading ? (
           <EyeLoadingDefault
             fullPage
             size="lg"
@@ -127,7 +142,12 @@ export default function HrCompanyDashboard({ company }: Props) {
               />
             ) : null}
             {section === "ringcentral" ? (
-              <RingCentralSection data={data} employees={employees} />
+              <RingCentralSection
+                data={data}
+                employees={employees}
+                from={periodRange.from}
+                to={periodRange.to}
+              />
             ) : null}
             {section === "monday" ? (
               <MondaySection data={data} employees={employees} />

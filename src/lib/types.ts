@@ -35,6 +35,20 @@ export type Admin = {
   updated_at: string;
 };
 
+/** Active Sanctum token / device for an admin login (superadmin sessions UI). */
+export type AdminDeviceSession = {
+  id: number;
+  admin_id: number;
+  admin_username: string | null;
+  admin_role: "super_admin" | "admin" | null;
+  ip: string | null;
+  user_agent: string | null;
+  device_label: string | null;
+  last_used_at: string | null;
+  created_at: string | null;
+  is_current: boolean;
+};
+
 export type EmployeeShift = "morning" | "afternoon" | "night" | "flexible";
 
 export type EmployeeStatus = "normal" | "close_monitor";
@@ -88,6 +102,59 @@ export type RingCentralCallsPage = {
   };
 };
 
+export type MessageDirection = "inbound" | "outbound";
+
+export type RingCentralMessageSummary = {
+  total_messages: number;
+  inbound: number;
+  outbound: number;
+  conversations_count: number;
+};
+
+export type RingCentralConversation = {
+  id: string;
+  peer_number: string;
+  peer_name: string | null;
+  last_message_at: string;
+  last_preview: string;
+  message_count: number;
+  last_direction: MessageDirection | null;
+};
+
+export type RingCentralMessage = {
+  id: number;
+  external_id: string;
+  conversation_id: string;
+  direction: MessageDirection;
+  body: string;
+  from_number: string;
+  to_number: string;
+  sent_at: string;
+  status: string | null;
+};
+
+export type RingCentralConversationsPage = {
+  data: RingCentralConversation[];
+  summary: RingCentralMessageSummary;
+  meta: {
+    from: string;
+    to: string;
+  };
+};
+
+export type RingCentralMessagesPage = {
+  data: RingCentralMessage[];
+  meta: {
+    total: number;
+    page: number;
+    per_page: number;
+    from: string;
+    to: string;
+    conversation_id: string | null;
+    direction: MessageDirection | null;
+  };
+};
+
 export type EmployeeMetrics = {
   minutes_on_call: number;
   calls_made: number;
@@ -98,6 +165,10 @@ export type EmployeeMetrics = {
   other_calls: number;
   outbound_minutes: number;
   inbound_minutes: number;
+  messages_total: number;
+  messages_inbound: number;
+  messages_outbound: number;
+  conversations_count: number;
   lates: number;
   leads: number;
   follow_up: number;
@@ -126,6 +197,10 @@ export type CompanyHrAnalytics = {
   other_calls?: number;
   outbound_minutes?: number;
   inbound_minutes?: number;
+  messages_total?: number;
+  messages_inbound?: number;
+  messages_outbound?: number;
+  conversations_count?: number;
   lates: number;
   leads: number;
   follow_up: number;
@@ -155,6 +230,9 @@ export type Employee = {
   department: string;
   position?: string | null;
   company?: string | null;
+  /** Client Portal login username when issued (never includes password). */
+  portal_username?: string | null;
+  has_portal_access?: boolean;
   metrics?: EmployeeMetrics;
   created_at: string;
   updated_at: string;
@@ -188,6 +266,11 @@ export type EmployeePayload = {
   company?: string | null;
 };
 
+export type PortalCredentialsPayload = {
+  username: string;
+  password: string;
+};
+
 export type AdminSession = {
   token: string;
   user_type: "admin";
@@ -205,5 +288,63 @@ export type AccessSession = {
 export type ApproveCredentials = {
   username: string;
   password: string;
-  expires_at: string;
+  expires_at?: string;
+};
+
+export type DriverLeadStatusKey =
+  | "rejected"
+  | "n_a"
+  | "follow_up"
+  | "call_back"
+  | "hired"
+  | "not_valid"
+  | "company_driver"
+  | "lease_driver";
+
+export type DriverLeadRecord = {
+  id: number;
+  board_name: string;
+  group_title: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  status: string;
+  status_key: DriverLeadStatusKey | string;
+  notes: string | null;
+  platform: string | null;
+  position: string | null;
+  state: string | null;
+  recruiter: string | null;
+  applied_on: string | null;
+  contacted_on: string | null;
+  columns: Record<string, string | null>;
+};
+
+export type DriverLeadSearchGroup = {
+  name: string;
+  phone: string | null;
+  email: string | null;
+  application_count: number;
+  statuses: string[];
+  history: DriverLeadRecord[];
+};
+
+export type DriverLeadSearchResponse = {
+  found: boolean;
+  message: string | null;
+  data: DriverLeadSearchGroup[];
+};
+
+export type DriverLeadsBrowseMeta = {
+  total: number;
+  page: number;
+  per_page: number;
+  last_page: number;
+  status: string | null;
+  board: string | null;
+};
+
+export type DriverLeadsBrowseResponse = {
+  data: DriverLeadRecord[];
+  meta: DriverLeadsBrowseMeta;
 };

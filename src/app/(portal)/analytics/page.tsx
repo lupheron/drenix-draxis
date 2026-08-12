@@ -1,28 +1,18 @@
-import Link from "next/link";
+"use client";
+
 import PageHeaderDefault from "@/components/UI/PageHeaderDefault";
-import DraxisAnalyticsDashboard from "@/components/LeadsDashboard/DraxisAnalyticsDashboard";
-import { fetchLeadsData } from "@/utils/fetchLeadsData";
+import LeadManagementSection from "@/components/HrCompanyDashboard/LeadManagementSection";
 
-export const revalidate = 300;
-
-export default async function AnalyticsPage() {
-  const { data, error } = await fetchLeadsData();
-
+export default function AnalyticsPage() {
   return (
     <>
       <PageHeaderDefault
-        title="Analytics"
-        description="JM lead performance — live Google Sheets data inside DRAXIS."
-        actions={
-          <Link
-            href="/analytics/standalone"
-            className="text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
-          >
-            Visit analytics-only website
-          </Link>
-        }
+        title="Lead Management"
+        description="JM lead performance — same sheet data, DRAXIS charts."
       />
-      <DraxisAnalyticsDashboard data={data} error={error} company="JM" />
+      <div className="px-8 py-8">
+        <LeadManagementSection />
+      </div>
     </>
   );
 }

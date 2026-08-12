@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import InputDefault from "@/components/FormItems/Input/InputDefault";
+import DatePickerDefault from "@/components/FormItems/DatePicker/DatePickerDefault";
 import SelectDefault from "@/components/FormItems/Select/SelectDefault";
 import ButtonDefault from "@/components/Button/ButtonDefault";
+import ClientPortalAccessSection from "@/components/Portal/ClientPortalAccessSection";
 import {
   DEPARTMENT_OPTIONS,
   EMPLOYEE_SHIFTS,
@@ -11,7 +13,11 @@ import {
 } from "@/constants/portal";
 import { COMPANIES } from "@/constants/companies";
 import { getDepartmentLabel } from "@/constants/departments";
-import type { Employee, EmployeePayload } from "@/lib/types";
+import type {
+  Employee,
+  EmployeePayload,
+  PortalCredentialsPayload,
+} from "@/lib/types";
 import {
   normalizeCompanyCode,
   normalizeDepartmentSlug,
@@ -21,12 +27,19 @@ import { formatApiError } from "@/utils/portal-errors";
 
 type EmployeeFormProps = {
   initial?: Employee;
-  onSubmit: (payload: EmployeePayload) => Promise<void>;
+  onSubmit: (
+    payload: EmployeePayload,
+    portal?: PortalCredentialsPayload | null,
+  ) => Promise<void>;
   onCancel: () => void;
   submitLabel?: string;
   defaultDepartment?: "hr" | "safety";
   lockDepartment?: boolean;
   defaultCompany?: string;
+  /** Edit only: reset portal password without saving the rest of the form. */
+  onResetPortalCredentials?: (
+    portal: PortalCredentialsPayload,
+  ) => Promise<void>;
 };
 
 const EMPTY_FORM: EmployeePayload = {
@@ -73,6 +86,32 @@ function employeeToPayload(employee: Employee): EmployeePayload {
   });
 }
 
+function resolvePortalPayload(
+  mode: "create" | "edit",
+  enabled: boolean,
+  username: string,
+  password: string,
+  existingUsername?: string | null,
+): PortalCredentialsPayload | null {
+  const user = username.trim() || existingUsername?.trim() || "";
+  const pass = password.trim();
+
+  if (mode === "create") {
+    if (!enabled) return null;
+    if (!user || !pass) {
+      throw new Error("Portal username and password are required when issuing access.");
+    }
+    return { username: user, password: pass };
+  }
+
+  // Edit: only send when password is provided (reset / issue)
+  if (!pass) return null;
+  if (!user) {
+    throw new Error("Portal username is required to set or reset the password.");
+  }
+  return { username: user, password: pass };
+}
+
 export default function EmployeeForm({
   initial,
   onSubmit,
@@ -81,14 +120,22 @@ export default function EmployeeForm({
   defaultDepartment = "hr",
   lockDepartment = false,
   defaultCompany = "JM",
+  onResetPortalCredentials,
 }: EmployeeFormProps) {
+  const mode = initial ? "edit" : "create";
   const [form, setForm] = useState<EmployeePayload>(
     initial
       ? employeeToPayload(initial)
       : { ...EMPTY_FORM, department: defaultDepartment, company: defaultCompany },
   );
+  const [portalEnabled, setPortalEnabled] = useState(false);
+  const [portalUsername, setPortalUsername] = useState(
+    initial?.portal_username ?? "",
+  );
+  const [portalPassword, setPortalPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   function updateField<K extends keyof EmployeePayload>(
     key: K,
@@ -103,11 +150,43 @@ export default function EmployeeForm({
     setLoading(true);
 
     try {
-      await onSubmit(normalizeEmployeePayload(form));
+      const portal = resolvePortalPayload(
+        mode,
+        portalEnabled,
+        portalUsername,
+        portalPassword,
+        initial?.portal_username,
+      );
+      await onSubmit(normalizeEmployeePayload(form), portal);
+      setPortalPassword("");
     } catch (submitError) {
       setError(formatApiError(submitError));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResetOnly() {
+    if (!onResetPortalCredentials) return;
+    setError(null);
+    setResetLoading(true);
+    try {
+      const portal = resolvePortalPayload(
+        "edit",
+        true,
+        portalUsername,
+        portalPassword,
+        initial?.portal_username,
+      );
+      if (!portal) {
+        throw new Error("Enter a new portal password to reset.");
+      }
+      await onResetPortalCredentials(portal);
+      setPortalPassword("");
+    } catch (resetError) {
+      setError(formatApiError(resetError));
+    } finally {
+      setResetLoading(false);
     }
   }
 
@@ -132,19 +211,17 @@ export default function EmployeeForm({
           value={form.last_name}
           onChange={(e) => updateField("last_name", e.target.value)}
         />
-        <InputDefault
+        <DatePickerDefault
           label="Birth date"
-          type="date"
           required
           value={form.birth_date}
-          onChange={(e) => updateField("birth_date", e.target.value)}
+          onChange={(value) => updateField("birth_date", value)}
         />
-        <InputDefault
+        <DatePickerDefault
           label="Joined at"
-          type="date"
           required
           value={form.joined_at}
-          onChange={(e) => updateField("joined_at", e.target.value)}
+          onChange={(value) => updateField("joined_at", value)}
         />
         <SelectDefault
           label="Shift"
@@ -251,6 +328,24 @@ export default function EmployeeForm({
           onChange={(e) => updateField("country", e.target.value)}
         />
       </section>
+
+      <ClientPortalAccessSection
+        mode={mode}
+        enabled={portalEnabled}
+        onEnabledChange={setPortalEnabled}
+        username={portalUsername}
+        onUsernameChange={setPortalUsername}
+        password={portalPassword}
+        onPasswordChange={setPortalPassword}
+        existingUsername={initial?.portal_username}
+        hasPortalAccess={initial?.has_portal_access}
+        onResetOnly={
+          mode === "edit" && onResetPortalCredentials
+            ? () => void handleResetOnly()
+            : undefined
+        }
+        resetLoading={resetLoading}
+      />
 
       <div className="flex flex-wrap justify-end gap-3">
         <ButtonDefault type="button" variant="ghost" onClick={onCancel}>

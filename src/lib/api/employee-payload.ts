@@ -47,6 +47,18 @@ export function normalizeMetrics(raw: unknown): EmployeeMetrics | undefined {
     other_calls: metricNumber(m.other_calls),
     outbound_minutes: metricNumber(m.outbound_minutes),
     inbound_minutes: metricNumber(m.inbound_minutes),
+    messages_total: metricNumber(
+      m.messages_total ?? m.sms_total ?? m.texts_total ?? m.total_messages,
+    ),
+    messages_inbound: metricNumber(
+      m.messages_inbound ?? m.sms_inbound ?? m.texts_inbound,
+    ),
+    messages_outbound: metricNumber(
+      m.messages_outbound ?? m.sms_outbound ?? m.texts_outbound,
+    ),
+    conversations_count: metricNumber(
+      m.conversations_count ?? m.sms_conversations ?? m.message_conversations,
+    ),
     lates: metricNumber(m.lates),
     leads: metricNumber(m.leads),
     follow_up: metricNumber(m.follow_up),
@@ -68,6 +80,10 @@ export function normalizeDailyMetric(row: Record<string, unknown> & { date?: str
     other_calls: 0,
     outbound_minutes: 0,
     inbound_minutes: 0,
+    messages_total: 0,
+    messages_inbound: 0,
+    messages_outbound: 0,
+    conversations_count: 0,
     lates: 0,
     leads: 0,
     follow_up: 0,
@@ -192,6 +208,18 @@ export function mapApiEmployee(raw: Record<string, unknown>): Employee {
     gender: raw.gender != null ? String(raw.gender) : null,
     position: raw.position != null ? String(raw.position) : null,
     metrics: normalizeMetrics(raw.metrics),
+    portal_username:
+      raw.portal_username != null
+        ? String(raw.portal_username)
+        : raw.portalUsername != null
+          ? String(raw.portalUsername)
+          : null,
+    has_portal_access: Boolean(
+      raw.has_portal_access ??
+        raw.hasPortalAccess ??
+        raw.portal_username ??
+        raw.portalUsername,
+    ),
     created_at: String(raw.created_at ?? ""),
     updated_at: String(raw.updated_at ?? ""),
   };

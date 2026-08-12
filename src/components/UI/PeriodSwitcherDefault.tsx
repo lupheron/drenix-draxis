@@ -3,12 +3,12 @@
 import type { PerformancePeriod } from "@/types/staff";
 import { cn } from "@/utils/cn";
 
-const PERIODS: { id: PerformancePeriod; label: string }[] = [
-  { id: "day", label: "Day" },
-  { id: "week", label: "Week" },
-  { id: "month", label: "Month" },
-  { id: "year", label: "Year" },
-  { id: "custom", label: "Custom" },
+const PERIODS: { id: PerformancePeriod; label: string; hint: string }[] = [
+  { id: "day", label: "Day", hint: "Today" },
+  { id: "week", label: "Week", hint: "This week" },
+  { id: "month", label: "Month", hint: "This month" },
+  { id: "year", label: "Year", hint: "This year" },
+  { id: "custom", label: "Custom", hint: "Pick dates" },
 ];
 
 type PeriodSwitcherDefaultProps = {
@@ -31,6 +31,7 @@ export default function PeriodSwitcherDefault({
           <button
             key={period.id}
             type="button"
+            title={period.hint}
             onClick={() => onChange(period.id)}
             className={cn(
               "px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] transition-colors",

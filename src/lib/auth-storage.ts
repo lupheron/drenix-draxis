@@ -111,8 +111,16 @@ export const authStorage = {
     return profile?.role_type === "ceo";
   },
 
+  /** Create/edit employees + Client Portal credentials. */
   canManageEmployees(): boolean {
-    return this.isAdmin();
+    if (this.isAdmin()) return true;
+    const role = this.getAccessProfile()?.role_type;
+    return role === "ceo" || role === "head_hr";
+  },
+
+  /** Full control over admin accounts, credentials, and sessions. */
+  canManageAdmins(): boolean {
+    return this.isSuperAdmin();
   },
 
   canAccessAnalytics(): boolean {

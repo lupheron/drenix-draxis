@@ -12,12 +12,15 @@ type DraxisAnalyticsDashboardProps = {
   data: LeadsDataRow[];
   error?: string;
   company?: string;
+  /** When true, omit page padding (e.g. inside HR section) */
+  embedded?: boolean;
 };
 
 export default function DraxisAnalyticsDashboard({
   data,
   error,
   company = "JM",
+  embedded = false,
 }: DraxisAnalyticsDashboardProps) {
   const [section, setSection] = useState<SectionId>("overview");
 
@@ -28,7 +31,7 @@ export default function DraxisAnalyticsDashboard({
 
   return (
     <LeadsThemeContext.Provider value="draxis">
-      <div className="space-y-6 px-8 py-8">
+      <div className={cn("space-y-6", !embedded && "px-8 py-8")}>
         {error ? (
           <div className="rounded-sm border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
             Live sheet unavailable ({error}). Showing fallback sample data.

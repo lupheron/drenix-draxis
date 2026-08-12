@@ -11,9 +11,11 @@ import StatCardDefault from "@/components/UI/StatCardDefault";
 import EyeLoadingDefault from "@/components/UI/EyeLoadingDefault";
 import ButtonDefault from "@/components/Button/ButtonDefault";
 import InputDefault from "@/components/FormItems/Input/InputDefault";
+import DatePickerDefault from "@/components/FormItems/DatePicker/DatePickerDefault";
 import SelectDefault from "@/components/FormItems/Select/SelectDefault";
 import ModalDefault from "@/components/UI/ModalDefault";
 import EmployeeForm from "@/components/Portal/EmployeeForm";
+import CredentialsModal from "@/components/Portal/CredentialsModal";
 import MetricsDetailModalDefault from "@/components/CommandCenter/MetricsDetailModalDefault";
 import EmployeeProfileModalDefault from "@/components/CommandCenter/EmployeeProfileModalDefault";
 import {
@@ -28,15 +30,18 @@ import { useEmployees } from "@/hooks/useEmployees";
 import {
   useCreateEmployee,
   useDeleteEmployee,
+  useSetPortalCredentials,
   useUpdateEmployee,
 } from "@/hooks/useEmployeeMutations";
 import { usePendingRequests } from "@/hooks/usePendingRequests";
 import { authStorage } from "@/lib/auth-storage";
 import type {
+  ApproveCredentials,
   CompanyCode,
   Employee,
   EmployeePayload,
   MetricField,
+  PortalCredentialsPayload,
 } from "@/lib/types";
 import type { PerformancePeriod } from "@/types/staff";
 import {
@@ -50,9 +55,12 @@ type ActiveModal = "create" | "edit" | "delete" | null;
 export default function CommandCenterView() {
   const canManage = authStorage.canManageEmployees();
   const isAdmin = authStorage.isAdmin();
+  const guestCompany = authStorage.getAccessProfile()?.company;
 
-  const [departmentId, setDepartmentId] = useState("all");
-  const [companyFilter, setCompanyFilter] = useState("");
+  const [departmentId, setDepartmentId] = useState(
+    canManage && !isAdmin ? "hr" : "all",
+  );
+  const [companyFilter, setCompanyFilter] = useState(guestCompany ?? "");
   const [period, setPeriod] = useState<PerformancePeriod>("month");
   const [sourceFilter, setSourceFilter] =
     useState<MetricsSourceFilter>("all");
@@ -73,6 +81,8 @@ export default function CommandCenterView() {
     useState<Employee | null>(null);
   const [profileEmployee, setProfileEmployee] = useState<Employee | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [issuedPortalCreds, setIssuedPortalCreds] =
+    useState<ApproveCredentials | null>(null);
 
   const isRegistry = departmentId === "all";
   const isHr = departmentId === "hr";
@@ -103,6 +113,7 @@ export default function CommandCenterView() {
   const createMutation = useCreateEmployee();
   const updateMutation = useUpdateEmployee();
   const deleteMutation = useDeleteEmployee();
+  const portalCredsMutation = useSetPortalCredentials();
 
   const filteredEmployees = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -183,15 +194,53 @@ export default function CommandCenterView() {
     setDeleteError(null);
   }
 
-  async function handleCreate(payload: EmployeePayload) {
-    await createMutation.mutateAsync(payload);
+  async function handleCreate(
+    payload: EmployeePayload,
+    portal?: PortalCredentialsPayload | null,
+  ) {
+    const employee = await createMutation.mutateAsync(payload);
+    if (portal) {
+      await portalCredsMutation.mutateAsync({
+        id: employee.id,
+        payload: portal,
+      });
+      setIssuedPortalCreds({
+        username: portal.username,
+        password: portal.password,
+      });
+    }
     closeModal();
   }
 
-  async function handleUpdate(payload: EmployeePayload) {
+  async function handleUpdate(
+    payload: EmployeePayload,
+    portal?: PortalCredentialsPayload | null,
+  ) {
     if (!activeEmployee) return;
     await updateMutation.mutateAsync({ id: activeEmployee.id, payload });
+    if (portal) {
+      await portalCredsMutation.mutateAsync({
+        id: activeEmployee.id,
+        payload: portal,
+      });
+      setIssuedPortalCreds({
+        username: portal.username,
+        password: portal.password,
+      });
+    }
     closeModal();
+  }
+
+  async function handleResetPortal(portal: PortalCredentialsPayload) {
+    if (!activeEmployee) return;
+    await portalCredsMutation.mutateAsync({
+      id: activeEmployee.id,
+      payload: portal,
+    });
+    setIssuedPortalCreds({
+      username: portal.username,
+      password: portal.password,
+    });
   }
 
   async function handleDelete() {
@@ -300,17 +349,16 @@ export default function CommandCenterView() {
 
             {period === "custom" ? (
               <div className="grid gap-4 border border-border bg-surface p-5 sm:grid-cols-2">
-                <InputDefault
+                <DatePickerDefault
                   label="From"
-                  type="date"
                   value={customFrom}
-                  onChange={(event) => setCustomFrom(event.target.value)}
+                  onChange={setCustomFrom}
                 />
-                <InputDefault
+                <DatePickerDefault
                   label="To"
-                  type="date"
                   value={customTo}
-                  onChange={(event) => setCustomTo(event.target.value)}
+                  onChange={setCustomTo}
+                  min={customFrom}
                 />
               </div>
             ) : null}
@@ -498,13 +546,16 @@ export default function CommandCenterView() {
         title="Add employee"
         description={`Creating for ${isHr ? "Human Resources" : "Safety"}. Choose company JM, WF, or BP.`}
         onClose={closeModal}
-        className="max-h-[90vh] max-w-2xl overflow-y-auto"
+        resizable
+        defaultWidth={1040}
+        defaultHeight={820}
       >
         <EmployeeForm
           submitLabel="Create employee"
           onCancel={closeModal}
           onSubmit={handleCreate}
           defaultDepartment={defaultDepartment}
+          defaultCompany={guestCompany ?? (companyFilter || "JM")}
           lockDepartment
         />
       </ModalDefault>
@@ -513,7 +564,9 @@ export default function CommandCenterView() {
         open={activeModal === "edit" && Boolean(activeEmployee)}
         title="Edit employee"
         onClose={closeModal}
-        className="max-h-[90vh] max-w-2xl overflow-y-auto"
+        resizable
+        defaultWidth={1040}
+        defaultHeight={820}
       >
         {activeEmployee ? (
           <EmployeeForm
@@ -522,6 +575,7 @@ export default function CommandCenterView() {
             submitLabel="Save changes"
             onCancel={closeModal}
             onSubmit={handleUpdate}
+            onResetPortalCredentials={handleResetPortal}
           />
         ) : null}
       </ModalDefault>
@@ -587,6 +641,14 @@ export default function CommandCenterView() {
         from={isRegistry ? undefined : periodRange.from}
         to={isRegistry ? undefined : periodRange.to}
         onClose={() => setProfileEmployee(null)}
+      />
+
+      <CredentialsModal
+        open={Boolean(issuedPortalCreds)}
+        credentials={issuedPortalCreds}
+        title="Client Portal credentials"
+        description="Share these with the employee for the light Client app. The password cannot be retrieved later."
+        onClose={() => setIssuedPortalCreds(null)}
       />
     </>
   );

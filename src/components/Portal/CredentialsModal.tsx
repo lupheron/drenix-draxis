@@ -9,12 +9,16 @@ type CredentialsModalProps = {
   open: boolean;
   credentials: ApproveCredentials | null;
   onClose: () => void;
+  title?: string;
+  description?: string;
 };
 
 export default function CredentialsModal({
   open,
   credentials,
   onClose,
+  title = "Access credentials",
+  description = "Share these credentials with the requester in person. The password cannot be retrieved later.",
 }: CredentialsModalProps) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -29,8 +33,8 @@ export default function CredentialsModal({
   return (
     <ModalDefault
       open={open}
-      title="Access credentials"
-      description="Share these credentials with the requester in person. The password cannot be retrieved later."
+      title={title}
+      description={description}
       onClose={onClose}
       className="max-w-md"
     >
@@ -69,12 +73,18 @@ export default function CredentialsModal({
           </div>
         </div>
 
-        <p className="text-sm text-muted-foreground">
-          Expires:{" "}
-          <span className="text-foreground">
-            {new Date(credentials.expires_at).toLocaleString()}
-          </span>
-        </p>
+        {credentials.expires_at ? (
+          <p className="text-sm text-muted-foreground">
+            Expires:{" "}
+            <span className="text-foreground">
+              {new Date(credentials.expires_at).toLocaleString()}
+            </span>
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            For the light Client Portal app. Password cannot be retrieved later.
+          </p>
+        )}
 
         <ButtonDefault type="button" className="w-full" onClick={onClose}>
           I have shared the credentials

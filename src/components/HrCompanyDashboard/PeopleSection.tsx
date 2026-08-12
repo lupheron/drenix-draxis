@@ -12,13 +12,17 @@ import {
   barOptions,
   doughnutOptions,
   lineOptions,
+  pointValueLabelsPlugin,
 } from "@/components/HrCompanyDashboard/ChartPanel";
 import {
   employeeLabel,
   formatTalkTime,
   hrChartColors,
 } from "@/components/HrCompanyDashboard/SectionNav";
-import { useRingCentralOverview } from "@/hooks/useEmployees";
+import {
+  usePersonDailyTexts,
+  useRingCentralOverview,
+} from "@/hooks/useEmployees";
 import type { Employee } from "@/lib/types";
 import { cn } from "@/utils/cn";
 
@@ -74,6 +78,7 @@ export default function PeopleSection({
                   </span>
                   <span className="font-mono text-[11px] text-muted">
                     {metrics?.calls_made ?? 0} calls ·{" "}
+                    {metrics?.messages_total ?? 0} texts ·{" "}
                     {formatTalkTime(metrics?.minutes_on_call ?? 0)}
                   </span>
                 </button>
@@ -115,6 +120,7 @@ function PersonDetail({
 }) {
   const metrics = employee.metrics;
   const overview = useRingCentralOverview(employee.id, from, to, true);
+  const texts = usePersonDailyTexts(employee.id, from, to, true);
 
   const direction = useMemo(
     () => ({
@@ -166,29 +172,105 @@ function PersonDetail({
     [employee.first_name, metrics],
   );
 
-  const dailyMissed = useMemo(() => {
-    const daily = overview.data?.daily ?? [];
+  const activityOverTime = useMemo(() => {
+    const callDays = overview.data?.daily ?? [];
+    const textByDate = new Map(
+      texts.daily.map((row) => [row.date, row] as const),
+    );
+    const dates = Array.from(
+      new Set([
+        ...callDays.map((row) => row.date ?? ""),
+        ...texts.daily.map((row) => row.date),
+      ]),
+    )
+      .filter(Boolean)
+      .sort();
+
+    const callByDate = new Map(
+      callDays.map((row) => [row.date ?? "", row] as const),
+    );
+
     return {
-      labels: daily.map((row) => row.date ?? ""),
+      labels: dates,
       datasets: [
         {
-          label: "Missed",
-          data: daily.map((row) => row.missed),
-          borderColor: hrChartColors.missed,
-          backgroundColor: "rgba(244,63,94,0.2)",
-          fill: true,
-          tension: 0.35,
-        },
-        {
           label: "Total calls",
-          data: daily.map((row) => row.total_calls),
-          borderColor: hrChartColors.calls,
+          data: dates.map((date) => callByDate.get(date)?.total_calls ?? 0),
+          borderColor: hrChartColors.outbound,
           backgroundColor: "transparent",
           tension: 0.35,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: hrChartColors.outbound,
+        },
+        {
+          label: "Missed calls",
+          data: dates.map((date) => callByDate.get(date)?.missed ?? 0),
+          borderColor: hrChartColors.missed,
+          backgroundColor: "rgba(244,63,94,0.12)",
+          fill: true,
+          tension: 0.35,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: hrChartColors.missed,
+        },
+        {
+          label: "Texts sent",
+          data: dates.map((date) => textByDate.get(date)?.sent ?? 0),
+          borderColor: hrChartColors.textsSent,
+          backgroundColor: "transparent",
+          borderDash: [5, 4],
+          tension: 0.35,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: hrChartColors.textsSent,
+        },
+        {
+          label: "Texts received",
+          data: dates.map((date) => textByDate.get(date)?.received ?? 0),
+          borderColor: hrChartColors.textsReceived,
+          backgroundColor: "transparent",
+          borderDash: [2, 3],
+          tension: 0.35,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: hrChartColors.textsReceived,
         },
       ],
     };
-  }, [overview.data?.daily]);
+  }, [overview.data?.daily, texts.daily]);
+
+  const dailyRows = useMemo(() => {
+    const callDays = overview.data?.daily ?? [];
+    const textByDate = new Map(
+      texts.daily.map((row) => [row.date, row] as const),
+    );
+    const dates = Array.from(
+      new Set([
+        ...callDays.map((row) => row.date ?? ""),
+        ...texts.daily.map((row) => row.date),
+      ]),
+    )
+      .filter(Boolean)
+      .sort();
+
+    const callByDate = new Map(
+      callDays.map((row) => [row.date ?? "", row] as const),
+    );
+
+    return dates.map((date) => ({
+      date,
+      total_calls: callByDate.get(date)?.total_calls ?? 0,
+      missed: callByDate.get(date)?.missed ?? 0,
+      texts_sent: textByDate.get(date)?.sent ?? 0,
+      texts_received: textByDate.get(date)?.received ?? 0,
+    }));
+  }, [overview.data?.daily, texts.daily]);
+
+  const textTotal =
+    texts.summary?.total_messages ??
+    metrics?.messages_total ??
+    texts.daily.reduce((sum, row) => sum + row.total, 0);
 
   return (
     <div className="space-y-5">
@@ -198,7 +280,8 @@ function PersonDetail({
             {employeeLabel(employee)}
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            {employee.position ?? "HR"} · {employee.company ?? "—"}
+            {employee.position ?? "HR"} · {employee.company ?? "—"} · {from} →{" "}
+            {to}
           </p>
         </div>
         <ButtonDefault type="button" size="sm" onClick={onOpenRingCentral}>
@@ -206,7 +289,7 @@ function PersonDetail({
         </ButtonDefault>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StatCardDefault
           id="p-calls"
           label="Calls"
@@ -216,6 +299,16 @@ function PersonDetail({
           id="p-talk"
           label="Talk time"
           value={formatTalkTime(metrics?.minutes_on_call ?? 0)}
+        />
+        <StatCardDefault
+          id="p-texts"
+          label="Texts"
+          value={String(textTotal)}
+          change={
+            texts.summary
+              ? `${texts.summary.outbound} sent · ${texts.summary.inbound} recv`
+              : undefined
+          }
         />
         <StatCardDefault
           id="p-leads"
@@ -245,25 +338,66 @@ function PersonDetail({
       </div>
 
       <ChartPanel
-        title="Calls over time"
+        title="Calls & texts over time"
         description={
-          overview.isLoading
+          overview.isLoading || texts.isLoading
             ? "Loading daily RingCentral…"
             : overview.isError
               ? "Could not load daily RingCentral"
-              : "Missed vs total calls from RingCentral daily API"
+              : "Teal = calls · Red = missed · Cyan dashed = texts sent · Purple dashed = texts received"
+        }
+        footer={
+          !overview.isLoading && !overview.isError && dailyRows.length > 0 ? (
+            <div className="overflow-x-auto border-t border-border pt-4">
+              <table className="w-full min-w-[480px] text-left text-sm">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-[0.18em] text-muted">
+                    <th className="pb-2 pr-4 font-medium">Date</th>
+                    <th className="pb-2 pr-4 font-medium">Calls</th>
+                    <th className="pb-2 pr-4 font-medium">Missed</th>
+                    <th className="pb-2 pr-4 font-medium">Texts sent</th>
+                    <th className="pb-2 font-medium">Texts received</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dailyRows.map((row) => (
+                    <tr
+                      key={row.date}
+                      className="border-t border-border/50 text-muted-foreground"
+                    >
+                      <td className="py-2 pr-4 text-foreground">{row.date}</td>
+                      <td className="py-2 pr-4 font-mono text-foreground">
+                        {row.total_calls}
+                      </td>
+                      <td className="py-2 pr-4 font-mono text-foreground">
+                        {row.missed}
+                      </td>
+                      <td className="py-2 pr-4 font-mono text-foreground">
+                        {row.texts_sent}
+                      </td>
+                      <td className="py-2 font-mono text-foreground">
+                        {row.texts_received}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null
         }
       >
-        {overview.isLoading || overview.isError ? (
-          overview.isLoading ? (
-            <EyeLoadingDefault size="sm" label="Loading daily RingCentral" />
-          ) : (
-            <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              No daily RingCentral data for this period.
-            </p>
-          )
+        {overview.isLoading || texts.isLoading ? (
+          <EyeLoadingDefault size="sm" label="Loading daily activity" />
+        ) : overview.isError ? (
+          <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            No daily RingCentral data for this period.
+          </p>
         ) : (
-          <Line data={dailyMissed} options={lineOptions()} />
+          <Line
+            data={activityOverTime}
+            options={lineOptions({ integerY: true })}
+            plugins={[pointValueLabelsPlugin]}
+          />
         )}
       </ChartPanel>
     </div>
