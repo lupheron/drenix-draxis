@@ -16,6 +16,10 @@ const METRIC_LABELS: Record<MetricField, string> = {
   other_calls: "Other calls",
   outbound_minutes: "Outbound minutes",
   inbound_minutes: "Inbound minutes",
+  messages_total: "Texts total",
+  messages_inbound: "Texts inbound",
+  messages_outbound: "Texts outbound",
+  conversations_count: "Conversations",
   lates: "Lates",
   leads: "Leads",
   follow_up: "Follow-up",
@@ -33,6 +37,10 @@ const METRIC_HINTS: Partial<Record<MetricField, string>> = {
   lates: "Lates sync coming soon (Google Sheets)",
   calls_made: "RingCentral total calls",
   minutes_on_call: "RingCentral talk minutes",
+  messages_total: "RingCentral SMS total",
+  messages_inbound: "RingCentral inbound texts",
+  messages_outbound: "RingCentral outbound texts",
+  conversations_count: "Distinct SMS conversations",
 };
 
 const ALL_DAILY_FIELDS: MetricField[] = [
@@ -45,6 +53,10 @@ const ALL_DAILY_FIELDS: MetricField[] = [
   "other_calls",
   "outbound_minutes",
   "inbound_minutes",
+  "messages_total",
+  "messages_inbound",
+  "messages_outbound",
+  "conversations_count",
   "lates",
   "leads",
   "follow_up",

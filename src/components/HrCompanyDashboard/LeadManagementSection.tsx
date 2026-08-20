@@ -4,7 +4,7 @@ import "@/components/Analytics/chartSetup";
 
 import { useEffect, useMemo, useState } from "react";
 import { Bar, Chart, Doughnut, Line } from "react-chartjs-2";
-import type { ChartOptions } from "chart.js";
+import type { ChartData, ChartOptions } from "chart.js";
 import EyeLoadingDefault from "@/components/UI/EyeLoadingDefault";
 import StatCardDefault from "@/components/UI/StatCardDefault";
 import {
@@ -534,7 +534,17 @@ export default function LeadManagementSection() {
             description="High / normal / low bands from period average"
             className="[&>div:last-child]:h-80"
           >
-            <Chart type="bar" data={performanceBands} options={barOptions()} />
+            <Chart
+              type="bar"
+              data={
+                performanceBands as unknown as ChartData<
+                  "bar",
+                  number[],
+                  string
+                >
+              }
+              options={barOptions()}
+            />
           </ChartPanel>
           <ChartPanel
             title="Volume and hire rate"

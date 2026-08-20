@@ -36,7 +36,7 @@ export type Alert = {
 };
 
 export type StatMetric = {
-  id: string;
+  id?: string;
   label: string;
   value: string;
   change?: string;
