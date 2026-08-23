@@ -234,8 +234,86 @@ export type Employee = {
   portal_username?: string | null;
   has_portal_access?: boolean;
   metrics?: EmployeeMetrics;
+  /** Populated when backend includes attendance on GET /users */
+  attendance?: EmployeeAttendanceSnapshot;
   created_at: string;
   updated_at: string;
+};
+
+export type AttendanceDayStatus =
+  | "present"
+  | "late"
+  | "no_show"
+  | "break"
+  | "missing_punch"
+  | "excused"
+  | "pending_review";
+
+export type AttendanceRequestType = "dispute" | "absence";
+export type AttendanceRequestStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "resolved";
+
+export type EmployeeAttendanceSnapshot = {
+  today_status: AttendanceDayStatus | null;
+  late_count: number;
+  no_show_count: number;
+  open_requests: number;
+};
+
+export type AttendanceEventRecord = {
+  id: number;
+  employee_id: number;
+  company: CompanyCode;
+  occurred_at: string;
+  action: string;
+  shift: string | null;
+  sheet_note: string | null;
+  late_minutes: number | null;
+  source: "sheet" | "manual";
+};
+
+export type AttendanceDay = {
+  id: number;
+  employee_id: number;
+  employee_name: string;
+  company: CompanyCode;
+  date: string;
+  status: AttendanceDayStatus;
+  late_minutes: number;
+  no_show: boolean;
+  sheet_note: string | null;
+  admin_note: string | null;
+  corrected_by?: { id: number; username: string } | null;
+  corrected_at?: string | null;
+  events?: AttendanceEventRecord[];
+};
+
+export type AttendanceRequest = {
+  id: number;
+  type: AttendanceRequestType;
+  status: AttendanceRequestStatus;
+  employee_id: number;
+  employee_name: string;
+  company: CompanyCode;
+  date: string;
+  message: string;
+  admin_comment: string | null;
+  related_day_id: number | null;
+  reviewed_by?: { id: number; username: string } | null;
+  reviewed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AttendanceDaysListParams = {
+  company?: CompanyCode | string;
+  from?: string;
+  to?: string;
+  employee_id?: number | string;
+  status?: AttendanceDayStatus | "";
 };
 
 export type UsersListParams = {

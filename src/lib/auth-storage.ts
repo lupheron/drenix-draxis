@@ -123,6 +123,13 @@ export const authStorage = {
     return this.isSuperAdmin();
   },
 
+  /** Attendance, notifications inbox, approve requests. */
+  canAccessAttendance(): boolean {
+    if (this.isAdmin()) return true;
+    const role = this.getAccessProfile()?.role_type;
+    return role === "ceo" || role === "head_hr";
+  },
+
   canAccessAnalytics(): boolean {
     if (this.isAdmin()) return true;
     return this.getAccessProfile()?.role_type === "ceo";

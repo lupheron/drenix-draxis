@@ -62,8 +62,18 @@ const MONDAY_COLUMNS: MetricColumn[] = [
 const LATES_COLUMN: MetricColumn = {
   key: "lates",
   label: "Lates",
-  title: "Lates sync coming soon (Google Sheets)",
+  title: "Late days this period (legacy metrics)",
 };
+
+function attendanceCount(value: number | undefined): string {
+  return value === undefined ? "—" : String(value);
+}
+
+function formatTodayAttendance(employee: Employee): string {
+  const status = employee.attendance?.today_status;
+  if (!status) return "—";
+  return status.replace(/_/g, " ");
+}
 
 function metricColumnsForSource(
   mode: "hr" | "safety",
@@ -217,6 +227,10 @@ export function MetricsTable({
           <Th>Position</Th>
           {showSalary ? <Th>Salary</Th> : null}
           <Th>Grade</Th>
+          <Th title="HikVision attendance today">Today</Th>
+          <Th title="Late days this period">Lates</Th>
+          <Th title="No-shows this period">No-show</Th>
+          <Th title="Open attendance requests">Open</Th>
           {metricColumns.map((column) => (
             <Th key={column.key} title={column.title}>
               {column.label}
@@ -252,13 +266,19 @@ export function MetricsTable({
               <Td>
                 <GradeBadgeDefault grade={employee.grade as EmployeeGrade} />
               </Td>
+              <Td className="capitalize text-xs">
+                {formatTodayAttendance(employee)}
+              </Td>
+              <Td>{attendanceCount(employee.attendance?.late_count)}</Td>
+              <Td>{attendanceCount(employee.attendance?.no_show_count)}</Td>
+              <Td>{attendanceCount(employee.attendance?.open_requests)}</Td>
               {metricColumns.map((column) => (
                 <Td key={column.key}>
                   <MetricButton
                     value={employee.metrics?.[column.key] ?? 0}
                     title={
                       column.key === "lates" && (employee.metrics?.lates ?? 0) === 0
-                        ? "Lates sync coming soon"
+                        ? "Lates from HikVision sync"
                         : undefined
                     }
                     onClick={() => onMetricClick(employee, column.key)}

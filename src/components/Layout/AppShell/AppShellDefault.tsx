@@ -13,6 +13,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdmin = authStorage.isAdmin();
   const canAccessAnalytics = authStorage.canAccessAnalytics();
+  const canAccessAttendance = authStorage.canAccessAttendance();
   const [hrOpen, setHrOpen] = useState(
     pathname.startsWith("/human-resources"),
   );
@@ -80,10 +81,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         Driver DB
                       </NavLink>
                     </li>
+                    <li>
+                      <NavLink
+                        href="/attendance?company=JM"
+                        active={pathname.startsWith("/attendance")}
+                        nested
+                      >
+                        Attendance
+                      </NavLink>
+                    </li>
                   </ul>
                 ) : null}
               </div>
             </>
+          ) : canAccessAttendance ? (
+            <NavLink href="/attendance?company=JM" active={pathname.startsWith("/attendance")}>
+              Attendance
+            </NavLink>
           ) : null}
 
           {/* CEO guests: lead dashboard lives under JM HR for admins */}

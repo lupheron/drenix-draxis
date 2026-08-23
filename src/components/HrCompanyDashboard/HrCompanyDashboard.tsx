@@ -12,6 +12,7 @@ import HrCompanySectionNav, {
 import AnalyticsSection from "@/components/HrCompanyDashboard/AnalyticsSection";
 import LeadManagementSection from "@/components/HrCompanyDashboard/LeadManagementSection";
 import DriverDatabaseSection from "@/components/HrCompanyDashboard/DriverDatabaseSection";
+import AttendanceSection from "@/components/HrCompanyDashboard/AttendanceSection";
 import RingCentralSection from "@/components/HrCompanyDashboard/RingCentralSection";
 import MondaySection from "@/components/HrCompanyDashboard/MondaySection";
 import PeopleSection from "@/components/HrCompanyDashboard/PeopleSection";
@@ -120,6 +121,12 @@ export default function HrCompanyDashboard({ company }: Props) {
           <LeadManagementSection />
         ) : section === "driver-database" && company === "JM" ? (
           <DriverDatabaseSection company={company} lockCompany />
+        ) : section === "attendance" ? (
+          <AttendanceSection
+            company={company}
+            from={periodRange.from}
+            to={periodRange.to}
+          />
         ) : isLoading ? (
           <EyeLoadingDefault
             fullPage

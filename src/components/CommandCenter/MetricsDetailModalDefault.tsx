@@ -34,7 +34,7 @@ const METRIC_HINTS: Partial<Record<MetricField, string>> = {
   hires: "Just hired — Monday HR Process JDM · Hired group",
   loaded: "First load / real hire — Monday HR Process JDM · Loaded group",
   rejected: "Rejected from Monday boards / HR Process",
-  lates: "Lates sync coming soon (Google Sheets)",
+  lates: "Lates from HikVision attendance sheet",
   calls_made: "RingCentral total calls",
   minutes_on_call: "RingCentral talk minutes",
   messages_total: "RingCentral SMS total",

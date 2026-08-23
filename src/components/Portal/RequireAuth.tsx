@@ -10,6 +10,8 @@ type RequireAuthProps = {
   adminOnly?: boolean;
   superAdminOnly?: boolean;
   guestAllowed?: boolean;
+  /** Admin or CEO / Head HR (attendance + notifications). */
+  attendanceAccess?: boolean;
   /** When set, guest (access) users must match this role. Admins always pass. */
   guestRole?: "ceo" | "head_hr";
 };
@@ -19,6 +21,7 @@ export default function RequireAuth({
   adminOnly = false,
   superAdminOnly = false,
   guestAllowed = true,
+  attendanceAccess = false,
   guestRole,
 }: RequireAuthProps) {
   const router = useRouter();
@@ -37,6 +40,16 @@ export default function RequireAuth({
     if (adminOnly && userType !== "admin") {
       router.replace(userType === "access" ? "/command-center" : "/");
       return;
+    }
+
+    if (attendanceAccess) {
+      const allowed =
+        userType === "admin" ||
+        (userType === "access" && authStorage.canAccessAttendance());
+      if (!allowed) {
+        router.replace("/command-center");
+        return;
+      }
     }
 
     if (superAdminOnly && role !== "super_admin") {
@@ -58,7 +71,7 @@ export default function RequireAuth({
     }
 
     setReady(true);
-  }, [adminOnly, guestAllowed, guestRole, router, superAdminOnly]);
+  }, [adminOnly, attendanceAccess, guestAllowed, guestRole, router, superAdminOnly]);
 
   if (!ready) {
     return (

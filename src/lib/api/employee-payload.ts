@@ -1,7 +1,9 @@
 import type {
+  AttendanceDayStatus,
   CompanyCode,
   DailyMetric,
   Employee,
+  EmployeeAttendanceSnapshot,
   EmployeeMetrics,
   EmployeePayload,
 } from "@/lib/types";
@@ -66,6 +68,60 @@ export function normalizeMetrics(raw: unknown): EmployeeMetrics | undefined {
     loaded: metricNumber(m.loaded),
     rejected: metricNumber(m.rejected),
     ringcentral: normalizeRingCentralSummary(m.ringcentral),
+  };
+}
+
+const ATTENDANCE_STATUSES: AttendanceDayStatus[] = [
+  "present",
+  "late",
+  "no_show",
+  "break",
+  "missing_punch",
+  "excused",
+  "pending_review",
+];
+
+function normalizeAttendanceSnapshot(
+  raw: unknown,
+): EmployeeAttendanceSnapshot | undefined {
+  if (raw == null || typeof raw !== "object") return undefined;
+  const nested = raw as Record<string, unknown>;
+
+  const todayRaw = nested.today_status ?? nested.attendance_today_status;
+  const today_status =
+    typeof todayRaw === "string" &&
+    ATTENDANCE_STATUSES.includes(todayRaw as AttendanceDayStatus)
+      ? (todayRaw as AttendanceDayStatus)
+      : null;
+
+  const lates_period = metricNumber(
+    nested.late_count ??
+      nested.lates_period ??
+      nested.attendance_lates_period,
+  );
+  const no_shows_period = metricNumber(
+    nested.no_show_count ??
+      nested.no_shows_period ??
+      nested.attendance_no_shows_period,
+  );
+  const open_requests = metricNumber(
+    nested.open_requests ?? nested.attendance_open_requests,
+  );
+
+  if (
+    today_status === null &&
+    lates_period === 0 &&
+    no_shows_period === 0 &&
+    open_requests === 0
+  ) {
+    return undefined;
+  }
+
+  return {
+    today_status,
+    late_count: lates_period,
+    no_show_count: no_shows_period,
+    open_requests,
   };
 }
 
@@ -208,6 +264,7 @@ export function mapApiEmployee(raw: Record<string, unknown>): Employee {
     gender: raw.gender != null ? String(raw.gender) : null,
     position: raw.position != null ? String(raw.position) : null,
     metrics: normalizeMetrics(raw.metrics),
+    attendance: normalizeAttendanceSnapshot(raw.attendance),
     portal_username:
       raw.portal_username != null
         ? String(raw.portal_username)

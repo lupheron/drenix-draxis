@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLogout } from "@/hooks/useLogout";
 import { usePendingRequests } from "@/hooks/usePendingRequests";
+import { useUnreadNotificationCount } from "@/hooks/useAttendanceAdmin";
 import { authStorage } from "@/lib/auth-storage";
 import { cn } from "@/utils/cn";
 
@@ -18,10 +19,15 @@ export default function ProfileMenu() {
   const isSuperAdmin = authStorage.isSuperAdmin();
   const isAdmin = authStorage.isAdmin();
   const canManageEmployees = authStorage.canManageEmployees();
+  const canAccessAttendance = authStorage.canAccessAttendance();
   const admin = authStorage.getAdmin();
   const guestProfile = authStorage.getAccessProfile();
   const { data: pending } = usePendingRequests();
-  const pendingCount = pending?.data.length ?? 0;
+  const { count: unreadNotifications } = useUnreadNotificationCount(
+    canAccessAttendance,
+  );
+  const pendingCount =
+    unreadNotifications + (isAdmin ? (pending?.data.length ?? 0) : 0);
 
   const displayName = isAdmin
     ? (admin?.username ?? "Admin")
@@ -86,9 +92,20 @@ export default function ProfileMenu() {
               {isSuperAdmin ? (
                 <MenuLink href="/profile/admins">Manage admins / Sessions</MenuLink>
               ) : null}
+              <MenuLink href="/attendance">Attendance</MenuLink>
               <div className="my-1 h-px bg-border" />
             </>
-          ) : canManageEmployees ? (
+          ) : canAccessAttendance ? (
+            <>
+              <MenuLink href="/profile/notifications" badge={pendingCount}>
+                Notifications
+              </MenuLink>
+              <MenuLink href="/attendance">Attendance</MenuLink>
+              <div className="my-1 h-px bg-border" />
+            </>
+          ) : null}
+
+          {canManageEmployees && !isAdmin ? (
             <>
               <MenuLink href="/employees/new">Add employee</MenuLink>
               <div className="my-1 h-px bg-border" />
