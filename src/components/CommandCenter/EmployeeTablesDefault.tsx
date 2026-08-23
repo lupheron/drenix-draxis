@@ -1,6 +1,7 @@
 "use client";
 
 import type { Employee, MetricField } from "@/lib/types";
+import { displayStatusLabel, resolveDisplayStatusFromRaw } from "@/utils/attendance-display";
 import { getDepartmentLabel } from "@/constants/departments";
 import { getCompanyLabel } from "@/constants/companies";
 import StaffRowActionsDefault from "@/components/UI/StaffRowActionsDefault";
@@ -70,9 +71,11 @@ function attendanceCount(value: number | undefined): string {
 }
 
 function formatTodayAttendance(employee: Employee): string {
-  const status = employee.attendance?.today_status;
+  const snapshot = employee.attendance;
+  if (!snapshot) return "—";
+  const status = resolveDisplayStatusFromRaw(snapshot.today_status, 0, false);
   if (!status) return "—";
-  return status.replace(/_/g, " ");
+  return displayStatusLabel(status);
 }
 
 function metricColumnsForSource(

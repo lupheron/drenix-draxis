@@ -1,6 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import AttendanceDayDetail, {
+  adminStatusFromDay,
+} from "@/components/Attendance/AttendanceDayDetail";
+import AttendanceStatusPill from "@/components/Attendance/AttendanceStatusPill";
+import AttendanceTimezoneToggle from "@/components/Attendance/AttendanceTimezoneToggle";
 import ButtonDefault from "@/components/Button/ButtonDefault";
 import InputDefault from "@/components/FormItems/Input/InputDefault";
 import SelectDefault from "@/components/FormItems/Select/SelectDefault";
@@ -14,47 +19,18 @@ import {
   useRejectAttendanceRequest,
   useUpdateAttendanceDay,
 } from "@/hooks/useAttendanceAdmin";
+import { useAttendanceTimezone } from "@/hooks/useAttendanceTimezone";
 import type {
   AttendanceDay,
   AttendanceDayStatus,
   AttendanceRequest,
   CompanyCode,
 } from "@/lib/types";
-import { cn } from "@/utils/cn";
+import {
+  ADMIN_DAY_FILTER_OPTIONS,
+  ADMIN_DAY_STATUS_OPTIONS,
+} from "@/utils/attendance-display";
 import { formatApiError } from "@/utils/portal-errors";
-
-const STATUS_OPTIONS: { value: AttendanceDayStatus | ""; label: string }[] = [
-  { value: "", label: "All statuses" },
-  { value: "present", label: "Present" },
-  { value: "late", label: "Late" },
-  { value: "no_show", label: "No show" },
-  { value: "break", label: "Break" },
-  { value: "missing_punch", label: "Missing punch" },
-  { value: "excused", label: "Excused" },
-  { value: "pending_review", label: "Pending review" },
-];
-
-function statusLabel(status: AttendanceDayStatus | null | undefined) {
-  if (!status) return "—";
-  return status.replace(/_/g, " ");
-}
-
-function StatusPill({ status }: { status: AttendanceDayStatus | null | undefined }) {
-  const tone =
-    status === "present" || status === "excused"
-      ? "text-success"
-      : status === "late" || status === "pending_review"
-        ? "text-warning"
-        : status === "no_show" || status === "missing_punch"
-          ? "text-danger"
-          : "text-muted-foreground";
-
-  return (
-    <span className={cn("text-xs uppercase tracking-[0.12em]", tone)}>
-      {statusLabel(status)}
-    </span>
-  );
-}
 
 type AdminAttendanceViewProps = {
   defaultCompany?: CompanyCode;
@@ -67,6 +43,7 @@ export default function AdminAttendanceView({
   from,
   to,
 }: AdminAttendanceViewProps) {
+  const { timezone, setTimezone } = useAttendanceTimezone();
   const [tab, setTab] = useState<"days" | "requests">("days");
   const [company, setCompany] = useState<CompanyCode>(defaultCompany);
   const [statusFilter, setStatusFilter] = useState<AttendanceDayStatus | "">("");
@@ -100,7 +77,7 @@ export default function AdminAttendanceView({
 
   function openDay(day: AttendanceDay) {
     setSelectedDay(day);
-    setEditStatus(day.status);
+    setEditStatus(adminStatusFromDay(day));
     setEditNote(day.admin_note ?? "");
     setActionError(null);
   }
@@ -146,6 +123,14 @@ export default function AdminAttendanceView({
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4 border border-border bg-surface px-5 py-4">
+        <p className="max-w-xl text-sm text-muted-foreground">
+          Shift dates from HikVision sheet column F. Overnight spans (18:00 →
+          03:00 Tashkent) stay on one shift date — not split at US midnight.
+        </p>
+        <AttendanceTimezoneToggle timezone={timezone} onChange={setTimezone} />
+      </div>
+
       <div className="flex flex-wrap gap-2 border border-border bg-surface p-1">
         {(
           [
@@ -157,12 +142,11 @@ export default function AdminAttendanceView({
             key={id}
             type="button"
             onClick={() => setTab(id)}
-            className={cn(
-              "px-4 py-2 text-sm transition-colors",
+            className={
               tab === id
-                ? "bg-foreground text-background"
-                : "text-muted-foreground hover:bg-accent-dim/50",
-            )}
+                ? "bg-foreground px-4 py-2 text-sm text-background"
+                : "px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent-dim/50"
+            }
           >
             {label}
           </button>
@@ -195,7 +179,7 @@ export default function AdminAttendanceView({
                 setStatusFilter(e.target.value as AttendanceDayStatus | "")
               }
               wrapperClassName="min-w-44"
-              options={STATUS_OPTIONS}
+              options={ADMIN_DAY_FILTER_OPTIONS}
             />
             <InputDefault
               label="Search employee"
@@ -203,6 +187,14 @@ export default function AdminAttendanceView({
               onChange={(e) => setSearch(e.target.value)}
               wrapperClassName="min-w-56"
             />
+            <div className="flex min-w-48 flex-col justify-end">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted">
+                Shift date range
+              </span>
+              <span className="mt-1 text-sm text-foreground">
+                {from} → {to}
+              </span>
+            </div>
           </div>
 
           {daysQuery.isLoading ? (
@@ -213,7 +205,7 @@ export default function AdminAttendanceView({
             </p>
           ) : days.length === 0 ? (
             <p className="border border-border bg-surface px-4 py-8 text-sm text-muted-foreground">
-              No attendance days for {company} in {from} → {to}.
+              No shift dates for {company} in {from} → {to}.
             </p>
           ) : (
             <div className="overflow-x-auto border border-border">
@@ -221,7 +213,7 @@ export default function AdminAttendanceView({
                 <thead>
                   <tr className="border-b border-border bg-surface-elevated">
                     {[
-                      "Date",
+                      "Shift date",
                       "Employee",
                       "Status",
                       "Late min",
@@ -251,7 +243,7 @@ export default function AdminAttendanceView({
                         {day.employee_name}
                       </td>
                       <td className="px-4 py-3">
-                        <StatusPill status={day.status} />
+                        <AttendanceStatusPill day={day} />
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {day.late_minutes || "—"}
@@ -269,7 +261,7 @@ export default function AdminAttendanceView({
                           variant="warning"
                           onClick={() => openDay(day)}
                         >
-                          Edit
+                          View / edit
                         </ButtonDefault>
                       </td>
                     </tr>
@@ -307,7 +299,10 @@ export default function AdminAttendanceView({
                         {request.employee_name}
                       </h2>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {request.date} · {request.status}
+                        Shift date {request.date}
+                        {request.related_day_id
+                          ? ` · day #${request.related_day_id}`
+                          : null}
                       </p>
                       <p className="mt-3 text-sm text-foreground">
                         {request.message}
@@ -336,50 +331,54 @@ export default function AdminAttendanceView({
 
       <ModalDefault
         open={Boolean(selectedDay)}
-        title="Correct attendance day"
+        title="Attendance day"
         description={
           selectedDay
-            ? `${selectedDay.employee_name} · ${selectedDay.date}`
+            ? `${selectedDay.employee_name} · shift ${selectedDay.date}`
             : undefined
         }
         onClose={() => setSelectedDay(null)}
       >
-        <div className="space-y-4">
-          <SelectDefault
-            label="Status"
-            value={editStatus}
-            onChange={(e) =>
-              setEditStatus(e.target.value as AttendanceDayStatus)
-            }
-            options={STATUS_OPTIONS.filter((option) => option.value !== "")}
-          />
-          <InputDefault
-            label="Admin note"
-            value={editNote}
-            onChange={(e) => setEditNote(e.target.value)}
-          />
-          {selectedDay?.sheet_note ? (
-            <p className="text-sm text-muted-foreground">
-              Sheet: {selectedDay.sheet_note}
-            </p>
-          ) : null}
-          <div className="flex justify-end gap-3">
-            <ButtonDefault
-              type="button"
-              variant="ghost"
-              onClick={() => setSelectedDay(null)}
-            >
-              Cancel
-            </ButtonDefault>
-            <ButtonDefault
-              type="button"
-              disabled={updateDay.isPending}
-              onClick={() => void saveDay()}
-            >
-              {updateDay.isPending ? "Saving…" : "Save correction"}
-            </ButtonDefault>
+        {selectedDay ? (
+          <div className="space-y-6">
+            <AttendanceDayDetail day={selectedDay} timezone={timezone} />
+
+            <div className="space-y-4 border-t border-border pt-4">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-muted">
+                Admin correction
+              </p>
+              <SelectDefault
+                label="Status"
+                value={editStatus}
+                onChange={(e) =>
+                  setEditStatus(e.target.value as AttendanceDayStatus)
+                }
+                options={ADMIN_DAY_STATUS_OPTIONS}
+              />
+              <InputDefault
+                label="Admin note"
+                value={editNote}
+                onChange={(e) => setEditNote(e.target.value)}
+              />
+              <div className="flex justify-end gap-3">
+                <ButtonDefault
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setSelectedDay(null)}
+                >
+                  Cancel
+                </ButtonDefault>
+                <ButtonDefault
+                  type="button"
+                  disabled={updateDay.isPending}
+                  onClick={() => void saveDay()}
+                >
+                  {updateDay.isPending ? "Saving…" : "Save correction"}
+                </ButtonDefault>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : null}
       </ModalDefault>
 
       <ModalDefault
@@ -389,6 +388,12 @@ export default function AdminAttendanceView({
       >
         {activeRequest ? (
           <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Shift date {activeRequest.date}
+              {activeRequest.related_day_id
+                ? ` · related day #${activeRequest.related_day_id}`
+                : null}
+            </p>
             <p className="text-sm text-foreground">{activeRequest.message}</p>
             <InputDefault
               label="Comment for employee"

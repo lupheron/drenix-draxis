@@ -8,6 +8,7 @@ import type {
   EmployeePayload,
 } from "@/lib/types";
 import { COMPANIES } from "@/constants/companies";
+import { resolveDisplayStatusFromRaw } from "@/utils/attendance-display";
 
 function metricNumber(value: unknown): number {
   const n = Number(value);
@@ -71,16 +72,6 @@ export function normalizeMetrics(raw: unknown): EmployeeMetrics | undefined {
   };
 }
 
-const ATTENDANCE_STATUSES: AttendanceDayStatus[] = [
-  "present",
-  "late",
-  "no_show",
-  "break",
-  "missing_punch",
-  "excused",
-  "pending_review",
-];
-
 function normalizeAttendanceSnapshot(
   raw: unknown,
 ): EmployeeAttendanceSnapshot | undefined {
@@ -88,11 +79,24 @@ function normalizeAttendanceSnapshot(
   const nested = raw as Record<string, unknown>;
 
   const todayRaw = nested.today_status ?? nested.attendance_today_status;
-  const today_status =
-    typeof todayRaw === "string" &&
-    ATTENDANCE_STATUSES.includes(todayRaw as AttendanceDayStatus)
-      ? (todayRaw as AttendanceDayStatus)
-      : null;
+  const lateMinutes = metricNumber(
+    nested.late_minutes ?? nested.attendance_late_minutes,
+  );
+  const noShow = Boolean(nested.no_show ?? nested.attendance_no_show);
+  const displayStatus = resolveDisplayStatusFromRaw(
+    typeof todayRaw === "string" ? (todayRaw as AttendanceDayStatus) : null,
+    lateMinutes,
+    noShow,
+  );
+  const today_status = displayStatus
+    ? ({
+        checked_in: "present",
+        late: "late",
+        no_show: "no_show",
+        excused: "excused",
+        pending_review: "pending_review",
+      }[displayStatus] as AttendanceDayStatus)
+    : null;
 
   const lates_period = metricNumber(
     nested.late_count ??

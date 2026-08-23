@@ -1,11 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import AttendanceStatusPill from "@/components/Attendance/AttendanceStatusPill";
+import AttendanceTimezoneToggle from "@/components/Attendance/AttendanceTimezoneToggle";
 import EyeLoadingDefault from "@/components/UI/EyeLoadingDefault";
 import StatCardDefault from "@/components/UI/StatCardDefault";
 import { useAttendanceDays } from "@/hooks/useAttendanceAdmin";
+import { useAttendanceTimezone } from "@/hooks/useAttendanceTimezone";
 import type { AttendanceDay, CompanyCode } from "@/lib/types";
 import { authStorage } from "@/lib/auth-storage";
+import {
+  countCheckedInDays,
+  countLateDays,
+  countNoShowDays,
+  resolveDisplayDayStatus,
+} from "@/utils/attendance-display";
 import { cn } from "@/utils/cn";
 import { formatApiError } from "@/utils/portal-errors";
 
@@ -26,20 +35,12 @@ type PersonRollup = {
 function rollupDays(days: AttendanceDay[]) {
   const byPerson = new Map<string, PersonRollup>();
 
-  let noShows = 0;
-  let lates = 0;
-  let present = 0;
   let pending = 0;
   let missingPunch = 0;
 
   for (const day of days) {
-    const isLate = day.status === "late" || day.late_minutes > 0;
-    const isNoShow = day.status === "no_show" || day.no_show;
-
-    if (isNoShow) noShows += 1;
-    if (isLate) lates += 1;
-    if (day.status === "present" || day.status === "excused") present += 1;
-    if (day.status === "pending_review") pending += 1;
+    const display = resolveDisplayDayStatus(day);
+    if (display === "pending_review") pending += 1;
     if (day.status === "missing_punch") missingPunch += 1;
 
     const existing = byPerson.get(day.employee_name) ?? {
@@ -50,45 +51,25 @@ function rollupDays(days: AttendanceDay[]) {
       pending: 0,
     };
     existing.days += 1;
-    if (isNoShow) existing.noShows += 1;
-    if (isLate) existing.lates += 1;
-    if (day.status === "pending_review") existing.pending += 1;
+    if (display === "no_show") existing.noShows += 1;
+    if (display === "late") existing.lates += 1;
+    if (display === "pending_review") existing.pending += 1;
     byPerson.set(day.employee_name, existing);
   }
 
   return {
-    noShows,
-    lates,
-    present,
+    noShows: countNoShowDays(days),
+    lates: countLateDays(days),
+    checkedIn: countCheckedInDays(days),
     pending,
     missingPunch,
     byPerson: [...byPerson.values()].sort((a, b) => a.name.localeCompare(b.name)),
   };
 }
 
-function statusLabel(status: AttendanceDay["status"]) {
-  return status.replace(/_/g, " ");
-}
-
-function StatusPill({ status }: { status: AttendanceDay["status"] }) {
-  const tone =
-    status === "present" || status === "excused"
-      ? "text-success"
-      : status === "late" || status === "pending_review"
-        ? "text-warning"
-        : status === "no_show" || status === "missing_punch"
-          ? "text-danger"
-          : "text-muted-foreground";
-
-  return (
-    <span className={cn("text-xs uppercase tracking-[0.12em]", tone)}>
-      {statusLabel(status)}
-    </span>
-  );
-}
-
 export default function AttendanceSection({ company, from, to }: Props) {
   const canManage = authStorage.canAccessAttendance();
+  const { timezone, setTimezone } = useAttendanceTimezone();
   const { data: days, isLoading, isError, error } = useAttendanceDays({
     company,
     from,
@@ -119,17 +100,21 @@ export default function AttendanceSection({ company, from, to }: Props) {
               HikVision attendance
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              {company} · synced from Laravel · {from} → {to}
+              {company} · shift dates {from} → {to} · Face ID desk in Tashkent,
+              business calendar US Central
             </p>
           </div>
-          {canManage ? (
-            <Link
-              href={`/attendance?company=${company}`}
-              className="text-xs uppercase tracking-[0.2em] text-muted hover:text-foreground"
-            >
-              Manage days →
-            </Link>
-          ) : null}
+          <div className="flex flex-col items-end gap-3">
+            <AttendanceTimezoneToggle timezone={timezone} onChange={setTimezone} />
+            {canManage ? (
+              <Link
+                href={`/attendance?company=${company}`}
+                className="text-xs uppercase tracking-[0.2em] text-muted hover:text-foreground"
+              >
+                Manage days →
+              </Link>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -147,9 +132,9 @@ export default function AttendanceSection({ company, from, to }: Props) {
           trend="down"
         />
         <StatCardDefault
-          id="att-present"
-          label="Present / excused"
-          value={String(summary.present)}
+          id="att-checked-in"
+          label="Checked in"
+          value={String(summary.checkedIn)}
           trend="neutral"
         />
         <StatCardDefault
@@ -173,7 +158,7 @@ export default function AttendanceSection({ company, from, to }: Props) {
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-elevated">
-                  {["Name", "Days", "No shows", "Lates", "Pending"].map(
+                  {["Name", "Shift days", "No shows", "Lates", "Pending"].map(
                     (header) => (
                       <th
                         key={header}
@@ -221,19 +206,19 @@ export default function AttendanceSection({ company, from, to }: Props) {
           </div>
         ) : (
           <p className="border border-border bg-surface px-4 py-6 text-sm text-muted-foreground">
-            No attendance rows in this period.
+            No shift dates in this period.
           </p>
         )}
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-light text-foreground">Days</h2>
+        <h2 className="text-lg font-light text-foreground">Shift days</h2>
         {rows.length ? (
           <div className="overflow-x-auto border border-border">
             <table className="w-full min-w-[960px] text-left text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface-elevated">
-                  {["Date", "Employee", "Status", "Late min", "No show", "Note"].map(
+                  {["Shift date", "Employee", "Status", "Late min", "No show", "Note"].map(
                     (header) => (
                       <th
                         key={header}
@@ -251,8 +236,8 @@ export default function AttendanceSection({ company, from, to }: Props) {
                     key={day.id}
                     className={cn(
                       "border-b border-border last:border-b-0",
-                      day.status === "no_show" && "bg-danger/5",
-                      day.status === "late" && "bg-warning/5",
+                      resolveDisplayDayStatus(day) === "no_show" && "bg-danger/5",
+                      resolveDisplayDayStatus(day) === "late" && "bg-warning/5",
                     )}
                   >
                     <td className="px-4 py-3 text-muted-foreground">{day.date}</td>
@@ -260,7 +245,7 @@ export default function AttendanceSection({ company, from, to }: Props) {
                       {day.employee_name}
                     </td>
                     <td className="px-4 py-3">
-                      <StatusPill status={day.status} />
+                      <AttendanceStatusPill day={day} />
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {day.late_minutes || "—"}
@@ -278,7 +263,7 @@ export default function AttendanceSection({ company, from, to }: Props) {
           </div>
         ) : (
           <p className="border border-border bg-surface px-4 py-6 text-sm text-muted-foreground">
-            No attendance days for {company} in this date range.
+            No shift dates for {company} in {from} → {to}.
           </p>
         )}
       </section>

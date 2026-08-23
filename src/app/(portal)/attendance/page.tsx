@@ -22,7 +22,7 @@ function AttendancePageContent() {
     <>
       <PageHeaderDefault
         title="Attendance"
-        description="HikVision sync, disputes, and absence requests. Approve or correct days; synced from Google Sheet via Laravel."
+        description="HikVision sync by shift date (Tashkent Face ID → US Central calendar). Review disputes, correct days, approve requests."
       />
       <div className="px-8 py-8">
         <AdminAttendanceView

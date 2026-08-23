@@ -267,8 +267,11 @@ export type AttendanceEventRecord = {
   id: number;
   employee_id: number;
   company: CompanyCode;
+  /** UTC instant from sync (Time Local parsed as Asia/Tashkent). */
   occurred_at: string;
   action: string;
+  /** Normalized when backend provides it: check_in | check_out | break */
+  event_kind?: "check_in" | "check_out" | "break" | "other";
   shift: string | null;
   sheet_note: string | null;
   late_minutes: number | null;
@@ -280,6 +283,7 @@ export type AttendanceDay = {
   employee_id: number;
   employee_name: string;
   company: CompanyCode;
+  /** Business shift day from sheet Shift Date column — not US calendar midnight. */
   date: string;
   status: AttendanceDayStatus;
   late_minutes: number;
