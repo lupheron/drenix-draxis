@@ -16,6 +16,7 @@ import AttendanceSection from "@/components/HrCompanyDashboard/AttendanceSection
 import RingCentralSection from "@/components/HrCompanyDashboard/RingCentralSection";
 import MondaySection from "@/components/HrCompanyDashboard/MondaySection";
 import PeopleSection from "@/components/HrCompanyDashboard/PeopleSection";
+import PerformanceRankSection from "@/components/Performance/PerformanceRankSection";
 import { getCompanyLabel } from "@/constants/companies";
 import { useCompanyHrAnalytics } from "@/hooks/useEmployees";
 import type { CompanyCode, Employee } from "@/lib/types";
@@ -36,6 +37,9 @@ export default function HrCompanyDashboard({ company }: Props) {
     getDateRangeForPreset("month").to,
   );
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
+  const [personDetailTab, setPersonDetailTab] = useState<
+    "attendance" | "performance"
+  >("performance");
   const [ringCentralEmployee, setRingCentralEmployee] =
     useState<Employee | null>(null);
 
@@ -52,8 +56,9 @@ export default function HrCompanyDashboard({ company }: Props) {
 
   const employees = useMemo(() => data?.by_employee ?? [], [data?.by_employee]);
 
-  function selectPerson(employee: Employee) {
+  function selectPerson(employee: Employee, tab: "attendance" | "performance" = "performance") {
     setSelectedPersonId(employee.id);
+    setPersonDetailTab(tab);
     setSection("people");
   }
 
@@ -121,12 +126,6 @@ export default function HrCompanyDashboard({ company }: Props) {
           <LeadManagementSection />
         ) : section === "driver-database" && company === "JM" ? (
           <DriverDatabaseSection company={company} lockCompany />
-        ) : section === "attendance" ? (
-          <AttendanceSection
-            company={company}
-            from={periodRange.from}
-            to={periodRange.to}
-          />
         ) : isLoading ? (
           <EyeLoadingDefault
             fullPage
@@ -141,6 +140,17 @@ export default function HrCompanyDashboard({ company }: Props) {
           <p className="text-sm text-muted-foreground">No analytics data.</p>
         ) : (
           <>
+            {section === "attendance" ? (
+              <AttendanceSection
+                company={company}
+                from={periodRange.from}
+                to={periodRange.to}
+                employees={employees}
+                onSelectEmployee={(employee) =>
+                  selectPerson(employee, "attendance")
+                }
+              />
+            ) : null}
             {section === "analytics" ? (
               <AnalyticsSection
                 data={data}
@@ -159,11 +169,18 @@ export default function HrCompanyDashboard({ company }: Props) {
             {section === "monday" ? (
               <MondaySection data={data} employees={employees} />
             ) : null}
+            {section === "performance" ? (
+              <PerformanceRankSection
+                employees={employees}
+                onSelectPerson={selectPerson}
+              />
+            ) : null}
             {section === "people" ? (
               <PeopleSection
                 employees={employees}
                 selectedId={selectedPersonId}
-                onSelect={(employee) => setSelectedPersonId(employee.id)}
+                onSelect={(employee) => selectPerson(employee, personDetailTab)}
+                initialTab={personDetailTab}
                 from={periodRange.from}
                 to={periodRange.to}
                 onOpenRingCentral={setRingCentralEmployee}

@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import AttendanceStatusPill from "@/components/Attendance/AttendanceStatusPill";
 import AttendanceTimezoneToggle from "@/components/Attendance/AttendanceTimezoneToggle";
+import {
+  EmployeeAttendanceCard,
+  groupAttendanceByEmployee,
+} from "@/components/HrCompanyDashboard/EmployeeAttendanceCard";
 import EyeLoadingDefault from "@/components/UI/EyeLoadingDefault";
 import StatCardDefault from "@/components/UI/StatCardDefault";
 import { useAttendanceDays } from "@/hooks/useAttendanceAdmin";
 import { useAttendanceTimezone } from "@/hooks/useAttendanceTimezone";
-import type { AttendanceDay, CompanyCode } from "@/lib/types";
+import type { AttendanceDay, CompanyCode, Employee } from "@/lib/types";
 import { authStorage } from "@/lib/auth-storage";
 import {
   countCheckedInDays,
@@ -15,59 +18,40 @@ import {
   countNoShowDays,
   resolveDisplayDayStatus,
 } from "@/utils/attendance-display";
-import { cn } from "@/utils/cn";
 import { formatApiError } from "@/utils/portal-errors";
 
 type Props = {
   company: CompanyCode;
   from: string;
   to: string;
+  employees: Employee[];
+  onSelectEmployee: (employee: Employee) => void;
 };
 
-type PersonRollup = {
-  name: string;
-  days: number;
-  noShows: number;
-  lates: number;
-  pending: number;
-};
-
-function rollupDays(days: AttendanceDay[]) {
-  const byPerson = new Map<string, PersonRollup>();
-
+function rollupSummary(days: AttendanceDay[]) {
   let pending = 0;
   let missingPunch = 0;
-
   for (const day of days) {
     const display = resolveDisplayDayStatus(day);
     if (display === "pending_review") pending += 1;
     if (day.status === "missing_punch") missingPunch += 1;
-
-    const existing = byPerson.get(day.employee_name) ?? {
-      name: day.employee_name,
-      days: 0,
-      noShows: 0,
-      lates: 0,
-      pending: 0,
-    };
-    existing.days += 1;
-    if (display === "no_show") existing.noShows += 1;
-    if (display === "late") existing.lates += 1;
-    if (display === "pending_review") existing.pending += 1;
-    byPerson.set(day.employee_name, existing);
   }
-
   return {
     noShows: countNoShowDays(days),
     lates: countLateDays(days),
     checkedIn: countCheckedInDays(days),
     pending,
     missingPunch,
-    byPerson: [...byPerson.values()].sort((a, b) => a.name.localeCompare(b.name)),
   };
 }
 
-export default function AttendanceSection({ company, from, to }: Props) {
+export default function AttendanceSection({
+  company,
+  from,
+  to,
+  employees,
+  onSelectEmployee,
+}: Props) {
   const canManage = authStorage.canAccessAttendance();
   const { timezone, setTimezone } = useAttendanceTimezone();
   const { data: days, isLoading, isError, error } = useAttendanceDays({
@@ -89,7 +73,19 @@ export default function AttendanceSection({ company, from, to }: Props) {
   }
 
   const rows = days ?? [];
-  const summary = rollupDays(rows);
+  const cards = groupAttendanceByEmployee(rows, employees);
+  const summary = rollupSummary(rows);
+
+  function handleCardClick(summary: (typeof cards)[number]) {
+    if (summary.employee) {
+      onSelectEmployee(summary.employee);
+      return;
+    }
+    const matched = employees.find((e) => e.id === summary.employeeId);
+    if (matched) {
+      onSelectEmployee(matched);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -100,15 +96,15 @@ export default function AttendanceSection({ company, from, to }: Props) {
               HikVision attendance
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              {company} · shift dates {from} → {to} · Face ID desk in Tashkent,
-              business calendar US Central
+              {company} · shift dates {from} → {to}. Click a person for full
+              attendance history, RingCentral, and leads.
             </p>
           </div>
           <div className="flex flex-col items-end gap-3">
             <AttendanceTimezoneToggle timezone={timezone} onChange={setTimezone} />
             {canManage ? (
               <Link
-                href={`/attendance?company=${company}`}
+                href={`/attendance/manage?company=${company}&from=${from}&to=${to}`}
                 className="text-xs uppercase tracking-[0.2em] text-muted hover:text-foreground"
               >
                 Manage days →
@@ -152,118 +148,23 @@ export default function AttendanceSection({ company, from, to }: Props) {
       </div>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-light text-foreground">By person</h2>
-        {summary.byPerson.length ? (
-          <div className="overflow-x-auto border border-border">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-border bg-surface-elevated">
-                  {["Name", "Shift days", "No shows", "Lates", "Pending"].map(
-                    (header) => (
-                      <th
-                        key={header}
-                        className="px-4 py-3 text-[10px] font-normal uppercase tracking-[0.2em] text-muted"
-                      >
-                        {header}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {summary.byPerson.map((person) => (
-                  <tr
-                    key={person.name}
-                    className="border-b border-border last:border-b-0"
-                  >
-                    <td className="px-4 py-3 text-foreground">{person.name}</td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {person.days}
-                    </td>
-                    <td
-                      className={cn(
-                        "px-4 py-3",
-                        person.noShows > 0 ? "text-danger" : "text-muted-foreground",
-                      )}
-                    >
-                      {person.noShows}
-                    </td>
-                    <td
-                      className={cn(
-                        "px-4 py-3",
-                        person.lates > 0 ? "text-warning" : "text-muted-foreground",
-                      )}
-                    >
-                      {person.lates}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {person.pending}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <h2 className="text-lg font-light text-foreground">
+          Team · {cards.length} employees
+        </h2>
+        {cards.length ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {cards.map((card) => (
+              <EmployeeAttendanceCard
+                key={card.employeeId}
+                summary={card}
+                timezone={timezone}
+                onClick={() => handleCardClick(card)}
+              />
+            ))}
           </div>
         ) : (
           <p className="border border-border bg-surface px-4 py-6 text-sm text-muted-foreground">
-            No shift dates in this period.
-          </p>
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="text-lg font-light text-foreground">Shift days</h2>
-        {rows.length ? (
-          <div className="overflow-x-auto border border-border">
-            <table className="w-full min-w-[960px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-border bg-surface-elevated">
-                  {["Shift date", "Employee", "Status", "Late min", "No show", "Note"].map(
-                    (header) => (
-                      <th
-                        key={header}
-                        className="px-4 py-3 text-[10px] font-normal uppercase tracking-[0.2em] text-muted"
-                      >
-                        {header}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((day) => (
-                  <tr
-                    key={day.id}
-                    className={cn(
-                      "border-b border-border last:border-b-0",
-                      resolveDisplayDayStatus(day) === "no_show" && "bg-danger/5",
-                      resolveDisplayDayStatus(day) === "late" && "bg-warning/5",
-                    )}
-                  >
-                    <td className="px-4 py-3 text-muted-foreground">{day.date}</td>
-                    <td className="px-4 py-3 text-foreground">
-                      {day.employee_name}
-                    </td>
-                    <td className="px-4 py-3">
-                      <AttendanceStatusPill day={day} />
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {day.late_minutes || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {day.no_show ? "Yes" : "No"}
-                    </td>
-                    <td className="max-w-xs truncate px-4 py-3 text-muted-foreground">
-                      {day.admin_note ?? day.sheet_note ?? "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="border border-border bg-surface px-4 py-6 text-sm text-muted-foreground">
-            No shift dates for {company} in {from} → {to}.
+            No attendance records in this period.
           </p>
         )}
       </section>

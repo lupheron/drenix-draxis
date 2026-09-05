@@ -1,35 +1,20 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo } from "react";
-import AdminAttendanceView from "@/components/Attendance/AdminAttendanceView";
+import { Suspense } from "react";
+import AttendanceDashboard from "@/components/Attendance/AttendanceDashboard";
 import PageHeaderDefault from "@/components/UI/PageHeaderDefault";
 import EyeLoadingDefault from "@/components/UI/EyeLoadingDefault";
 import RequireAuth from "@/components/Portal/RequireAuth";
-import { COMPANIES } from "@/constants/companies";
-import type { CompanyCode } from "@/lib/types";
-import { getDateRangeForPreset } from "@/utils/date-ranges";
 
 function AttendancePageContent() {
-  const searchParams = useSearchParams();
-  const companyParam = (searchParams.get("company") ?? "JM").toUpperCase();
-  const companyMeta = COMPANIES.find((item) => item.code === companyParam);
-  const company = (companyMeta?.code ?? "JM") as CompanyCode;
-
-  const range = useMemo(() => getDateRangeForPreset("month"), []);
-
   return (
     <>
       <PageHeaderDefault
         title="Attendance"
-        description="HikVision sync by shift date (Tashkent Face ID → US Central calendar). Review disputes, correct days, approve requests."
+        description="All companies — today, week, month, and custom shift-date ranges at a glance."
       />
       <div className="px-8 py-8">
-        <AdminAttendanceView
-          defaultCompany={company}
-          from={range.from}
-          to={range.to}
-        />
+        <AttendanceDashboard />
       </div>
     </>
   );

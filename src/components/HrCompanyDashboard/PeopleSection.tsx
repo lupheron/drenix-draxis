@@ -2,7 +2,7 @@
 
 import "@/components/Analytics/chartSetup";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 import ButtonDefault from "@/components/Button/ButtonDefault";
 import StatCardDefault from "@/components/UI/StatCardDefault";
@@ -14,6 +14,7 @@ import {
   lineOptions,
   pointValueLabelsPlugin,
 } from "@/components/HrCompanyDashboard/ChartPanel";
+import EmployeeAttendanceHistory from "@/components/HrCompanyDashboard/EmployeeAttendanceHistory";
 import {
   employeeLabel,
   formatTalkTime,
@@ -26,10 +27,13 @@ import {
 import type { Employee } from "@/lib/types";
 import { cn } from "@/utils/cn";
 
+type PersonDetailTab = "attendance" | "performance";
+
 type Props = {
   employees: Employee[];
   selectedId: number | null;
   onSelect: (employee: Employee) => void;
+  initialTab?: PersonDetailTab;
   from: string;
   to: string;
   onOpenRingCentral: (employee: Employee) => void;
@@ -39,6 +43,7 @@ export default function PeopleSection({
   employees,
   selectedId,
   onSelect,
+  initialTab = "performance",
   from,
   to,
   onOpenRingCentral,
@@ -94,6 +99,7 @@ export default function PeopleSection({
             employee={selected}
             from={from}
             to={to}
+            initialTab={initialTab}
             onOpenRingCentral={() => onOpenRingCentral(selected)}
           />
         ) : (
@@ -111,13 +117,21 @@ function PersonDetail({
   employee,
   from,
   to,
+  initialTab,
   onOpenRingCentral,
 }: {
   employee: Employee;
   from: string;
   to: string;
+  initialTab: PersonDetailTab;
   onOpenRingCentral: () => void;
 }) {
+  const [tab, setTab] = useState<PersonDetailTab>(initialTab);
+
+  useEffect(() => {
+    setTab(initialTab);
+  }, [employee.id, initialTab]);
+
   const metrics = employee.metrics;
   const overview = useRingCentralOverview(employee.id, from, to, true);
   const texts = usePersonDailyTexts(employee.id, from, to, true);
@@ -289,6 +303,33 @@ function PersonDetail({
         </ButtonDefault>
       </div>
 
+      <div className="flex gap-1 border border-border bg-surface p-1">
+        {(
+          [
+            ["attendance", "Attendance"],
+            ["performance", "Calls & leads"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={cn(
+              "flex-1 px-4 py-2 text-sm transition-colors",
+              tab === id
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:bg-accent-dim/50",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "attendance" ? (
+        <EmployeeAttendanceHistory employee={employee} from={from} to={to} />
+      ) : (
+        <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StatCardDefault
           id="p-calls"
@@ -400,6 +441,8 @@ function PersonDetail({
           />
         )}
       </ChartPanel>
+        </>
+      )}
     </div>
   );
 }

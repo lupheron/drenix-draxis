@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import EmployeePerformancePanel from "@/components/Performance/EmployeePerformancePanel";
 import ModalDefault from "@/components/UI/ModalDefault";
 import ButtonDefault from "@/components/Button/ButtonDefault";
 import RingCentralModalDefault from "@/components/CommandCenter/RingCentralModalDefault";
 import type { Employee } from "@/lib/types";
+import type { EmployeePerformanceProfile } from "@/types/performance-ranking";
 import { getDepartmentLabel } from "@/constants/departments";
 import { getCompanyLabel } from "@/constants/companies";
 import { formatDate } from "@/utils/formatters";
@@ -12,6 +14,7 @@ import { formatDate } from "@/utils/formatters";
 type EmployeeProfileModalProps = {
   open: boolean;
   employee: Employee | null;
+  performance?: EmployeePerformanceProfile;
   from?: string;
   to?: string;
   onClose: () => void;
@@ -20,6 +23,7 @@ type EmployeeProfileModalProps = {
 export default function EmployeeProfileModalDefault({
   open,
   employee,
+  performance,
   from,
   to,
   onClose,
@@ -61,6 +65,11 @@ export default function EmployeeProfileModalDefault({
               />
               <Field label="Position" value={employee.position ?? "—"} />
               <Field label="Status" value={employee.status} />
+              <Field
+                label="Joined"
+                value={formatDate(employee.joined_at.slice(0, 10))}
+              />
+              <Field label="Grade" value={employee.grade || "—"} />
             </dl>
 
             {metrics ? (
@@ -77,6 +86,16 @@ export default function EmployeeProfileModalDefault({
                 />
                 <Field label="Hired" value={String(metrics.hires ?? 0)} />
                 <Field label="Loaded" value={String(metrics.loaded ?? 0)} />
+              </div>
+            ) : null}
+
+            {performance ? (
+              <div className="border-t border-border pt-5">
+                <EmployeePerformancePanel
+                  employee={employee}
+                  profile={performance}
+                  compact
+                />
               </div>
             ) : null}
 

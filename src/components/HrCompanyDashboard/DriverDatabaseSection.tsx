@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import LeadSocialVerifier from "@/components/Leads/LeadSocialVerifier";
 import ButtonDefault from "@/components/Button/ButtonDefault";
 import InputDefault from "@/components/FormItems/Input/InputDefault";
 import SelectDefault from "@/components/FormItems/Select/SelectDefault";
@@ -114,6 +115,12 @@ function HistoryCard({ record }: { record: DriverLeadRecord }) {
         <DetailField label="Contacted" value={formatDate(record.contacted_on)} />
       </div>
 
+      {record.phone?.trim() ? (
+        <div className="mt-4 border-t border-border pt-4">
+          <LeadSocialVerifier phone={record.phone} />
+        </div>
+      ) : null}
+
       {record.notes?.trim() ? (
         <div className="mt-4 border-t border-border pt-4">
           <p className="text-[10px] uppercase tracking-[0.18em] text-muted">Notes</p>
@@ -172,12 +179,17 @@ function SearchResultGroup({ group }: { group: DriverLeadSearchGroup }) {
               />
             ))}
           </div>
+          {group.phone?.trim() ? (
+            <div className="mt-4">
+              <LeadSocialVerifier phone={group.phone} compact />
+            </div>
+          ) : null}
         </div>
         <span className="text-xs text-muted">{open ? "▾" : "▸"}</span>
       </button>
 
       {open ? (
-        <div className="space-y-3 border-t border-border px-5 py-4">
+        <div className="flex flex-col gap-2.5 border-t border-border px-5 py-4">
           {group.history.map((record) => (
             <HistoryCard key={record.id} record={record} />
           ))}
@@ -187,22 +199,31 @@ function SearchResultGroup({ group }: { group: DriverLeadSearchGroup }) {
   );
 }
 
-function BrowseRow({ record }: { record: DriverLeadRecord }) {
+function BrowseDriverCard({ record }: { record: DriverLeadRecord }) {
   return (
-    <tr className="border-b border-border last:border-b-0 hover:bg-accent-dim/20">
-      <td className="px-4 py-3 text-foreground">{record.name}</td>
-      <td className="px-4 py-3 text-muted-foreground">{record.phone ?? "—"}</td>
-      <td className="px-4 py-3 text-muted-foreground">{record.email ?? "—"}</td>
-      <td className="px-4 py-3">
+    <article className="border border-border bg-surface p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-foreground">{record.name ?? "—"}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{record.board_name}</p>
+        </div>
         <StatusBadge statusKey={record.status_key} label={record.status} />
-      </td>
-      <td className="px-4 py-3 text-muted-foreground">{record.board_name}</td>
-      <td className="px-4 py-3 text-muted-foreground">{record.recruiter ?? "—"}</td>
-      <td className="px-4 py-3 text-muted-foreground">{record.state ?? "—"}</td>
-      <td className="px-4 py-3 text-muted-foreground">
-        {formatDate(record.applied_on)}
-      </td>
-    </tr>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <DetailField label="Phone" value={record.phone} />
+        <DetailField label="Email" value={record.email} />
+        <DetailField label="Recruiter" value={record.recruiter} />
+        <DetailField label="State" value={record.state} />
+        <DetailField label="Applied" value={formatDate(record.applied_on)} />
+      </div>
+
+      {record.phone?.trim() ? (
+        <div className="mt-4 border-t border-border pt-4">
+          <LeadSocialVerifier phone={record.phone} compact />
+        </div>
+      ) : null}
+    </article>
   );
 }
 
@@ -408,35 +429,10 @@ export default function DriverDatabaseSection({
           </p>
         ) : (
           <>
-            <div className="overflow-x-auto border border-border">
-              <table className="w-full min-w-[960px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-surface-elevated">
-                    {[
-                      "Name",
-                      "Phone",
-                      "Email",
-                      "Status",
-                      "Board",
-                      "Recruiter",
-                      "State",
-                      "Applied",
-                    ].map((header) => (
-                      <th
-                        key={header}
-                        className="px-4 py-3 text-[10px] font-normal uppercase tracking-[0.2em] text-muted"
-                      >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {browseRows.map((record) => (
-                    <BrowseRow key={record.id} record={record} />
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex flex-col gap-2.5">
+              {browseRows.map((record) => (
+                <BrowseDriverCard key={record.id} record={record} />
+              ))}
             </div>
 
             {browseMeta && browseMeta.last_page > 1 ? (

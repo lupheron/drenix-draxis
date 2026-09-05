@@ -2,6 +2,8 @@
 
 import type { Employee, MetricField } from "@/lib/types";
 import { displayStatusLabel, resolveDisplayStatusFromRaw } from "@/utils/attendance-display";
+import type { EmployeePerformanceProfile } from "@/types/performance-ranking";
+import HrPerformanceRankBadge from "@/components/UI/HrPerformanceRankBadge";
 import { getDepartmentLabel } from "@/constants/departments";
 import { getCompanyLabel } from "@/constants/companies";
 import StaffRowActionsDefault from "@/components/UI/StaffRowActionsDefault";
@@ -198,7 +200,9 @@ type MetricsTableProps = {
   employees: Employee[];
   mode: "hr" | "safety";
   sourceFilter?: MetricsSourceFilter;
+  rankings?: Map<number, EmployeePerformanceProfile>;
   onNameClick: (employee: Employee) => void;
+  onRankClick?: (employee: Employee) => void;
   onMetricClick: (
     employee: Employee,
     metric: MetricField,
@@ -211,7 +215,9 @@ export function MetricsTable({
   employees,
   mode,
   sourceFilter = "all",
+  rankings,
   onNameClick,
+  onRankClick,
   onMetricClick,
   onEdit,
   onDelete,
@@ -230,6 +236,7 @@ export function MetricsTable({
           <Th>Position</Th>
           {showSalary ? <Th>Salary</Th> : null}
           <Th>Grade</Th>
+          <Th title="HR performance index vs cohort">HR rank</Th>
           <Th title="HikVision attendance today">Today</Th>
           <Th title="Late days this period">Lates</Th>
           <Th title="No-shows this period">No-show</Th>
@@ -268,6 +275,23 @@ export function MetricsTable({
               ) : null}
               <Td>
                 <GradeBadgeDefault grade={employee.grade as EmployeeGrade} />
+              </Td>
+              <Td>
+                {rankings?.get(employee.id) ? (
+                  <button
+                    type="button"
+                    className="transition-opacity hover:opacity-80"
+                    onClick={() => onRankClick?.(employee)}
+                    title={`PI ${rankings.get(employee.id)!.performanceIndex}`}
+                  >
+                    <HrPerformanceRankBadge
+                      tier={rankings.get(employee.id)!.tier}
+                      confidence={rankings.get(employee.id)!.confidence}
+                    />
+                  </button>
+                ) : (
+                  <span className="text-xs text-muted">—</span>
+                )}
               </Td>
               <Td className="capitalize text-xs">
                 {formatTodayAttendance(employee)}

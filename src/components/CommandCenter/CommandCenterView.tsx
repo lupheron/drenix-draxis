@@ -18,12 +18,14 @@ import EmployeeForm from "@/components/Portal/EmployeeForm";
 import CredentialsModal from "@/components/Portal/CredentialsModal";
 import MetricsDetailModalDefault from "@/components/CommandCenter/MetricsDetailModalDefault";
 import EmployeeProfileModalDefault from "@/components/CommandCenter/EmployeeProfileModalDefault";
+import PerformanceDetailModal from "@/components/Performance/PerformanceDetailModal";
 import {
   MetricsTable,
   RegistryTable,
   isRingCentralMetric,
 } from "@/components/CommandCenter/EmployeeTablesDefault";
 import RingCentralModalDefault from "@/components/CommandCenter/RingCentralModalDefault";
+import { usePerformanceRankings } from "@/hooks/usePerformanceRankings";
 import { DEPARTMENTS } from "@/constants/departments";
 import { COMPANY_CODES, getCompanyLabel } from "@/constants/companies";
 import { useEmployees } from "@/hooks/useEmployees";
@@ -80,6 +82,8 @@ export default function CommandCenterView() {
   const [ringCentralEmployee, setRingCentralEmployee] =
     useState<Employee | null>(null);
   const [profileEmployee, setProfileEmployee] = useState<Employee | null>(null);
+  const [performanceEmployee, setPerformanceEmployee] =
+    useState<Employee | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [issuedPortalCreds, setIssuedPortalCreds] =
     useState<ApproveCredentials | null>(null);
@@ -108,6 +112,9 @@ export default function CommandCenterView() {
 
   const { data: employees = [], isLoading, isError, error } =
     useEmployees(listParams);
+  const { rankings, getProfile } = usePerformanceRankings(
+    isRegistry ? [] : employees,
+  );
   const { data: pending } = usePendingRequests();
 
   const createMutation = useCreateEmployee();
@@ -512,7 +519,9 @@ export default function CommandCenterView() {
               employees={filteredEmployees}
               mode={isHr ? "hr" : "safety"}
               sourceFilter={isHr ? sourceFilter : "all"}
+              rankings={rankings}
               onNameClick={setProfileEmployee}
+              onRankClick={setPerformanceEmployee}
               onMetricClick={(employee, metric) => {
                 if (isRingCentralMetric(metric)) {
                   setRingCentralEmployee(employee);
@@ -638,9 +647,25 @@ export default function CommandCenterView() {
       <EmployeeProfileModalDefault
         open={Boolean(profileEmployee)}
         employee={profileEmployee}
+        performance={
+          profileEmployee ? getProfile(profileEmployee.id) : undefined
+        }
         from={isRegistry ? undefined : periodRange.from}
         to={isRegistry ? undefined : periodRange.to}
         onClose={() => setProfileEmployee(null)}
+      />
+
+      <PerformanceDetailModal
+        open={Boolean(performanceEmployee)}
+        employee={performanceEmployee}
+        profile={
+          performanceEmployee
+            ? getProfile(performanceEmployee.id) ?? null
+            : null
+        }
+        from={periodRange.from}
+        to={periodRange.to}
+        onClose={() => setPerformanceEmployee(null)}
       />
 
       <CredentialsModal

@@ -199,3 +199,38 @@ export function countCheckedInDays(days: AttendanceDay[]): number {
       resolveDisplayDayStatus(day) === "late",
   ).length;
 }
+
+export type AttendanceSummaryStats = {
+  checkedIn: number;
+  late: number;
+  noShow: number;
+  pending: number;
+  missingPunch: number;
+  totalDayRows: number;
+  uniqueEmployees: number;
+};
+
+export function summarizeAttendanceDays(
+  days: AttendanceDay[],
+): AttendanceSummaryStats {
+  const names = new Set<string>();
+  let pending = 0;
+  let missingPunch = 0;
+
+  for (const day of days) {
+    if (day.employee_name) names.add(day.employee_name);
+    const display = resolveDisplayDayStatus(day);
+    if (display === "pending_review") pending += 1;
+    if (day.status === "missing_punch") missingPunch += 1;
+  }
+
+  return {
+    checkedIn: countCheckedInDays(days),
+    late: countLateDays(days),
+    noShow: countNoShowDays(days),
+    pending,
+    missingPunch,
+    totalDayRows: days.length,
+    uniqueEmployees: names.size,
+  };
+}
