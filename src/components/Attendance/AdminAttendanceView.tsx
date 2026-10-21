@@ -31,6 +31,7 @@ import type {
 import {
   ADMIN_DAY_FILTER_OPTIONS,
   ADMIN_DAY_STATUS_OPTIONS,
+  normalizePersonKey,
   resolveAttendanceEmployeeName,
 } from "@/utils/attendance-display";
 import { formatApiError } from "@/utils/portal-errors";
@@ -70,24 +71,34 @@ export default function AdminAttendanceView({
     { company, from, to, status: statusFilter || undefined },
     tab === "days",
   );
-  const employeesQuery = useEmployees({ company });
+  // Load full directory (not company-filtered) so blank/API-mismatched rows still resolve
+  const employeesQuery = useEmployees();
   const requestsQuery = useAttendanceRequests("pending");
   const updateDay = useUpdateAttendanceDay();
   const approveRequest = useApproveAttendanceRequest();
   const rejectRequest = useRejectAttendanceRequest();
 
-  const employeesById = useMemo(() => {
-    const map = new Map<number, Employee>();
+  const { employeesById, employeesByName } = useMemo(() => {
+    const byId = new Map<number, Employee>();
+    const byName = new Map<string, Employee>();
     for (const employee of employeesQuery.data ?? []) {
-      map.set(employee.id, employee);
+      byId.set(employee.id, employee);
+      const label = normalizePersonKey(
+        `${employee.first_name} ${employee.last_name}`,
+      );
+      if (label) byName.set(label, employee);
     }
-    return map;
+    return { employeesById: byId, employeesByName: byName };
   }, [employeesQuery.data]);
 
   const days = useMemo(() => {
     const rows = (daysQuery.data ?? []).map((day) => ({
       ...day,
-      displayName: resolveAttendanceEmployeeName(day, employeesById),
+      displayName: resolveAttendanceEmployeeName(
+        day,
+        employeesById,
+        employeesByName,
+      ),
     }));
     const q = search.trim().toLowerCase();
     if (!q) return rows;
@@ -97,7 +108,7 @@ export default function AdminAttendanceView({
       const rawName = (row.employee_name ?? "").toLowerCase();
       return name.includes(q) || rawName.includes(q) || idMatch;
     });
-  }, [daysQuery.data, employeesById, search]);
+  }, [daysQuery.data, employeesById, employeesByName, search]);
 
   const requests = requestsQuery.data ?? [];
 
@@ -327,14 +338,14 @@ export default function AdminAttendanceView({
                         {request.type} · {request.company}
                       </p>
                       <h2 className="mt-1 text-lg text-foreground">
-                        {request.employee_name?.trim() ||
-                          resolveAttendanceEmployeeName(
-                            {
-                              employee_id: request.employee_id,
-                              employee_name: request.employee_name,
-                            },
-                            employeesById,
-                          )}
+                        {resolveAttendanceEmployeeName(
+                          {
+                            employee_id: request.employee_id,
+                            employee_name: request.employee_name,
+                          },
+                          employeesById,
+                          employeesByName,
+                        )}
                       </h2>
                       <p className="mt-1 text-sm text-muted-foreground">
                         Shift date {request.date}

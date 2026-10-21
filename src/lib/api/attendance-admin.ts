@@ -1,4 +1,10 @@
 import { apiRequest } from "@/lib/api/client";
+import {
+  normalizeAttendanceDay,
+  normalizeAttendanceDays,
+  normalizeAttendanceRequest,
+  normalizeAttendanceRequests,
+} from "@/lib/api/attendance-normalize";
 import type {
   AttendanceDay,
   AttendanceDayStatus,
@@ -22,7 +28,7 @@ function buildQuery(params: Record<string, string | number | undefined>): string
 export async function fetchAttendanceDays(
   params: AttendanceDaysListParams,
 ): Promise<AttendanceDay[]> {
-  const response = await apiRequest<{ data: AttendanceDay[] }>(
+  const response = await apiRequest<{ data: unknown }>(
     `/attendance/days${buildQuery({
       company: params.company,
       from: params.from,
@@ -31,7 +37,7 @@ export async function fetchAttendanceDays(
       status: params.status,
     })}`,
   );
-  return response.data ?? [];
+  return normalizeAttendanceDays(response.data);
 }
 
 export async function fetchAttendanceEmployeeDays(
@@ -39,10 +45,10 @@ export async function fetchAttendanceEmployeeDays(
   from: string,
   to: string,
 ): Promise<AttendanceDay[]> {
-  const response = await apiRequest<{ data: AttendanceDay[] }>(
+  const response = await apiRequest<{ data: unknown }>(
     `/attendance/employees/${employeeId}${buildQuery({ from, to })}`,
   );
-  return response.data ?? [];
+  return normalizeAttendanceDays(response.data);
 }
 
 export async function updateAttendanceDay(
@@ -54,51 +60,51 @@ export async function updateAttendanceDay(
     no_show?: boolean;
   },
 ): Promise<AttendanceDay> {
-  const response = await apiRequest<{ data: AttendanceDay }>(
+  const response = await apiRequest<{ data: unknown }>(
     `/attendance/days/${id}`,
     {
       method: "PATCH",
       body: JSON.stringify(body),
     },
   );
-  return response.data;
+  return normalizeAttendanceDay(response.data);
 }
 
 export async function fetchAttendanceRequests(
   status?: AttendanceRequestStatus | "pending" | "",
 ): Promise<AttendanceRequest[]> {
-  const response = await apiRequest<{ data: AttendanceRequest[] }>(
+  const response = await apiRequest<{ data: unknown }>(
     `/attendance/requests${buildQuery({ status: status ?? "pending" })}`,
   );
-  return response.data ?? [];
+  return normalizeAttendanceRequests(response.data);
 }
 
 export async function approveAttendanceRequest(
   id: number,
   comment?: string,
 ): Promise<AttendanceRequest> {
-  const response = await apiRequest<{ data: AttendanceRequest }>(
+  const response = await apiRequest<{ data: unknown }>(
     `/attendance/requests/${id}/approve`,
     {
       method: "POST",
       body: JSON.stringify(comment ? { comment } : {}),
     },
   );
-  return response.data;
+  return normalizeAttendanceRequest(response.data);
 }
 
 export async function rejectAttendanceRequest(
   id: number,
   comment?: string,
 ): Promise<AttendanceRequest> {
-  const response = await apiRequest<{ data: AttendanceRequest }>(
+  const response = await apiRequest<{ data: unknown }>(
     `/attendance/requests/${id}/reject`,
     {
       method: "POST",
       body: JSON.stringify(comment ? { comment } : {}),
     },
   );
-  return response.data;
+  return normalizeAttendanceRequest(response.data);
 }
 
 export type AdminNotification = {

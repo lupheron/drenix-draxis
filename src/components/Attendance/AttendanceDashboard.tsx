@@ -102,17 +102,19 @@ export default function AttendanceDashboard() {
 
       {tab === "dashboard" ? (
         <>
-          <div className="flex flex-wrap gap-4 border border-border bg-surface p-5">
+          <div className="flex flex-wrap items-end gap-5 border border-border bg-surface p-5">
             <DatePickerDefault
               label="Custom from"
               value={customFrom}
               onChange={setCustomFrom}
+              wrapperClassName="min-w-[16rem]"
             />
             <DatePickerDefault
               label="Custom to"
               value={customTo}
               onChange={setCustomTo}
               min={customFrom}
+              wrapperClassName="min-w-[16rem]"
             />
           </div>
 

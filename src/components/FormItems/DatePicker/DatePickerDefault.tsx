@@ -79,7 +79,10 @@ export default function DatePickerDefault({
   return (
     <div
       ref={rootRef}
-      className={cn("relative flex flex-col gap-2", wrapperClassName)}
+      className={cn(
+        "relative flex min-w-[15rem] flex-col gap-2",
+        wrapperClassName,
+      )}
     >
       {label ? (
         <label
@@ -99,17 +102,22 @@ export default function DatePickerDefault({
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
         className={cn(
-          "flex h-10 w-full items-center justify-between border border-border bg-surface px-3 text-left text-sm outline-none transition-colors",
+          "flex h-10 w-full min-w-[15rem] items-center gap-3 border border-border bg-surface px-3 text-left text-sm outline-none transition-colors",
           "hover:border-border-strong focus:border-border-strong focus:bg-surface-elevated",
           error ? "border-danger/50" : undefined,
           disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
           className,
         )}
       >
-        <span className={selected ? "text-foreground" : "text-muted"}>
+        <span
+          className={cn(
+            "min-w-0 flex-1 truncate",
+            selected ? "text-foreground" : "text-muted",
+          )}
+        >
           {selected ? format(selected, "MMM d, yyyy") : placeholder}
         </span>
-        <span className="text-[10px] uppercase tracking-[0.18em] text-muted">
+        <span className="shrink-0 text-[10px] uppercase tracking-[0.18em] text-muted">
           Date
         </span>
       </button>

@@ -222,30 +222,48 @@ export function employeeDisplayName(employee: {
   return `${employee.first_name} ${employee.last_name}`.trim();
 }
 
+export function normalizePersonKey(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 /**
- * Backend often returns blank employee_name — resolve from /users map by employee_id.
+ * Backend often returns blank employee_name / uses user_id — resolve via directory.
  */
 export function resolveAttendanceEmployeeName(
   day: Pick<AttendanceDay, "employee_id" | "employee_name">,
   employeesById?: Map<number, Employee>,
+  employeesByName?: Map<string, Employee>,
 ): string {
+  if (day.employee_id && employeesById?.has(day.employee_id)) {
+    return employeeDisplayName(employeesById.get(day.employee_id)!);
+  }
+
   const fromApi = day.employee_name?.trim();
-  if (fromApi) return fromApi;
-  const employee = employeesById?.get(day.employee_id);
-  if (employee) return employeeDisplayName(employee);
+  if (fromApi) {
+    const matched = employeesByName?.get(normalizePersonKey(fromApi));
+    if (matched) return employeeDisplayName(matched);
+    return fromApi;
+  }
+
   if (day.employee_id) return `Employee #${day.employee_id}`;
-  return "Unknown";
+  return "Unlinked employee";
 }
 
 export function summarizeAttendanceDays(
   days: AttendanceDay[],
 ): AttendanceSummaryStats {
-  const employeeIds = new Set<number>();
+  const keys = new Set<string>();
   let pending = 0;
   let missingPunch = 0;
 
   for (const day of days) {
-    if (day.employee_id) employeeIds.add(day.employee_id);
+    if (day.employee_id) {
+      keys.add(`id:${day.employee_id}`);
+    } else if (day.employee_name?.trim()) {
+      keys.add(`name:${normalizePersonKey(day.employee_name)}`);
+    } else {
+      keys.add(`row:${day.id}`);
+    }
     const display = resolveDisplayDayStatus(day);
     if (display === "pending_review") pending += 1;
     if (day.status === "missing_punch") missingPunch += 1;
@@ -258,6 +276,6 @@ export function summarizeAttendanceDays(
     pending,
     missingPunch,
     totalDayRows: days.length,
-    uniqueEmployees: employeeIds.size,
+    uniqueEmployees: keys.size,
   };
 }

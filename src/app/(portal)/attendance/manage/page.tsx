@@ -45,13 +45,19 @@ function ManageAttendanceContent() {
           ← Back to dashboard
         </Link>
 
-        <div className="flex flex-wrap gap-4 border border-border bg-surface p-5">
-          <DatePickerDefault label="From" value={from} onChange={setFrom} />
+        <div className="flex flex-wrap items-end gap-5 border border-border bg-surface p-5">
+          <DatePickerDefault
+            label="From"
+            value={from}
+            onChange={setFrom}
+            wrapperClassName="min-w-[16rem]"
+          />
           <DatePickerDefault
             label="To"
             value={to}
             onChange={setTo}
             min={from}
+            wrapperClassName="min-w-[16rem]"
           />
         </div>
 
