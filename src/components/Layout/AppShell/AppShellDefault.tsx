@@ -83,15 +83,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     </li>
                     <li>
                       <NavLink
-                        href="/attendance"
-                        active={pathname.startsWith("/attendance")}
-                        nested
-                      >
-                        Attendance
-                      </NavLink>
-                    </li>
-                    <li>
-                      <NavLink
                         href="/hr-performance/guide"
                         active={pathname.startsWith("/hr-performance")}
                         nested
@@ -102,6 +93,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   </ul>
                 ) : null}
               </div>
+              {canAccessAttendance ? (
+                <NavLink
+                  href="/attendance"
+                  active={pathname.startsWith("/attendance")}
+                >
+                  Attendance
+                </NavLink>
+              ) : null}
             </>
           ) : canAccessAttendance ? (
             <NavLink href="/attendance" active={pathname.startsWith("/attendance")}>

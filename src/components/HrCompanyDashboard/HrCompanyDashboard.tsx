@@ -12,7 +12,6 @@ import HrCompanySectionNav, {
 import AnalyticsSection from "@/components/HrCompanyDashboard/AnalyticsSection";
 import LeadManagementSection from "@/components/HrCompanyDashboard/LeadManagementSection";
 import DriverDatabaseSection from "@/components/HrCompanyDashboard/DriverDatabaseSection";
-import AttendanceSection from "@/components/HrCompanyDashboard/AttendanceSection";
 import RingCentralSection from "@/components/HrCompanyDashboard/RingCentralSection";
 import MondaySection from "@/components/HrCompanyDashboard/MondaySection";
 import PeopleSection from "@/components/HrCompanyDashboard/PeopleSection";
@@ -140,17 +139,6 @@ export default function HrCompanyDashboard({ company }: Props) {
           <p className="text-sm text-muted-foreground">No analytics data.</p>
         ) : (
           <>
-            {section === "attendance" ? (
-              <AttendanceSection
-                company={company}
-                from={periodRange.from}
-                to={periodRange.to}
-                employees={employees}
-                onSelectEmployee={(employee) =>
-                  selectPerson(employee, "attendance")
-                }
-              />
-            ) : null}
             {section === "analytics" ? (
               <AnalyticsSection
                 data={data}

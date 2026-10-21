@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AttendanceDayDetail, {
   adminStatusFromDay,
 } from "@/components/Attendance/AttendanceDayDetail";
@@ -20,15 +20,18 @@ import {
   useUpdateAttendanceDay,
 } from "@/hooks/useAttendanceAdmin";
 import { useAttendanceTimezone } from "@/hooks/useAttendanceTimezone";
+import { useEmployees } from "@/hooks/useEmployees";
 import type {
   AttendanceDay,
   AttendanceDayStatus,
   AttendanceRequest,
   CompanyCode,
+  Employee,
 } from "@/lib/types";
 import {
   ADMIN_DAY_FILTER_OPTIONS,
   ADMIN_DAY_STATUS_OPTIONS,
+  resolveAttendanceEmployeeName,
 } from "@/utils/attendance-display";
 import { formatApiError } from "@/utils/portal-errors";
 
@@ -37,6 +40,8 @@ type AdminAttendanceViewProps = {
   from: string;
   to: string;
 };
+
+type DayRow = AttendanceDay & { displayName: string };
 
 export default function AdminAttendanceView({
   defaultCompany = "JM",
@@ -48,7 +53,7 @@ export default function AdminAttendanceView({
   const [company, setCompany] = useState<CompanyCode>(defaultCompany);
   const [statusFilter, setStatusFilter] = useState<AttendanceDayStatus | "">("");
   const [search, setSearch] = useState("");
-  const [selectedDay, setSelectedDay] = useState<AttendanceDay | null>(null);
+  const [selectedDay, setSelectedDay] = useState<DayRow | null>(null);
   const [editStatus, setEditStatus] = useState<AttendanceDayStatus>("present");
   const [editNote, setEditNote] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -57,25 +62,46 @@ export default function AdminAttendanceView({
     null,
   );
 
+  useEffect(() => {
+    setCompany(defaultCompany);
+  }, [defaultCompany]);
+
   const daysQuery = useAttendanceDays(
     { company, from, to, status: statusFilter || undefined },
     tab === "days",
   );
+  const employeesQuery = useEmployees({ company });
   const requestsQuery = useAttendanceRequests("pending");
   const updateDay = useUpdateAttendanceDay();
   const approveRequest = useApproveAttendanceRequest();
   const rejectRequest = useRejectAttendanceRequest();
 
+  const employeesById = useMemo(() => {
+    const map = new Map<number, Employee>();
+    for (const employee of employeesQuery.data ?? []) {
+      map.set(employee.id, employee);
+    }
+    return map;
+  }, [employeesQuery.data]);
+
   const days = useMemo(() => {
-    const rows = daysQuery.data ?? [];
+    const rows = (daysQuery.data ?? []).map((day) => ({
+      ...day,
+      displayName: resolveAttendanceEmployeeName(day, employeesById),
+    }));
     const q = search.trim().toLowerCase();
     if (!q) return rows;
-    return rows.filter((row) => row.employee_name.toLowerCase().includes(q));
-  }, [daysQuery.data, search]);
+    return rows.filter((row) => {
+      const name = row.displayName.toLowerCase();
+      const idMatch = String(row.employee_id).includes(q);
+      const rawName = (row.employee_name ?? "").toLowerCase();
+      return name.includes(q) || rawName.includes(q) || idMatch;
+    });
+  }, [daysQuery.data, employeesById, search]);
 
   const requests = requestsQuery.data ?? [];
 
-  function openDay(day: AttendanceDay) {
+  function openDay(day: DayRow) {
     setSelectedDay(day);
     setEditStatus(adminStatusFromDay(day));
     setEditNote(day.admin_note ?? "");
@@ -127,6 +153,8 @@ export default function AdminAttendanceView({
         <p className="max-w-xl text-sm text-muted-foreground">
           Shift dates from HikVision sheet column F. Overnight spans (18:00 →
           03:00 Tashkent) stay on one shift date — not split at US midnight.
+          Names resolve from the employee directory when the attendance API
+          omits them.
         </p>
         <AttendanceTimezoneToggle timezone={timezone} onChange={setTimezone} />
       </div>
@@ -185,6 +213,7 @@ export default function AdminAttendanceView({
               label="Search employee"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              placeholder="Name or employee ID"
               wrapperClassName="min-w-56"
             />
             <div className="flex min-w-48 flex-col justify-end">
@@ -197,7 +226,7 @@ export default function AdminAttendanceView({
             </div>
           </div>
 
-          {daysQuery.isLoading ? (
+          {daysQuery.isLoading || employeesQuery.isLoading ? (
             <EyeLoadingDefault size="md" label="Loading attendance days" />
           ) : daysQuery.isError ? (
             <p className="border border-danger/30 bg-danger/10 px-4 py-8 text-sm text-danger">
@@ -205,7 +234,9 @@ export default function AdminAttendanceView({
             </p>
           ) : days.length === 0 ? (
             <p className="border border-border bg-surface px-4 py-8 text-sm text-muted-foreground">
-              No shift dates for {company} in {from} → {to}.
+              {search.trim()
+                ? `No employees matching “${search.trim()}” for ${company} in ${from} → ${to}.`
+                : `No shift dates for ${company} in ${from} → ${to}.`}
             </p>
           ) : (
             <div className="overflow-x-auto border border-border">
@@ -240,7 +271,7 @@ export default function AdminAttendanceView({
                         {day.date}
                       </td>
                       <td className="px-4 py-3 text-foreground">
-                        {day.employee_name}
+                        {day.displayName}
                       </td>
                       <td className="px-4 py-3">
                         <AttendanceStatusPill day={day} />
@@ -296,7 +327,14 @@ export default function AdminAttendanceView({
                         {request.type} · {request.company}
                       </p>
                       <h2 className="mt-1 text-lg text-foreground">
-                        {request.employee_name}
+                        {request.employee_name?.trim() ||
+                          resolveAttendanceEmployeeName(
+                            {
+                              employee_id: request.employee_id,
+                              employee_name: request.employee_name,
+                            },
+                            employeesById,
+                          )}
                       </h2>
                       <p className="mt-1 text-sm text-muted-foreground">
                         Shift date {request.date}
@@ -334,7 +372,7 @@ export default function AdminAttendanceView({
         title="Attendance day"
         description={
           selectedDay
-            ? `${selectedDay.employee_name} · shift ${selectedDay.date}`
+            ? `${selectedDay.displayName} · shift ${selectedDay.date}`
             : undefined
         }
         onClose={() => setSelectedDay(null)}

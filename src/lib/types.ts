@@ -281,7 +281,8 @@ export type AttendanceEventRecord = {
 export type AttendanceDay = {
   id: number;
   employee_id: number;
-  employee_name: string;
+  /** May be blank from Laravel until denormalized — UI resolves via /users */
+  employee_name: string | null;
   company: CompanyCode;
   /** Business shift day from sheet Shift Date column — not US calendar midnight. */
   date: string;
@@ -300,7 +301,7 @@ export type AttendanceRequest = {
   type: AttendanceRequestType;
   status: AttendanceRequestStatus;
   employee_id: number;
-  employee_name: string;
+  employee_name: string | null;
   company: CompanyCode;
   date: string;
   message: string;

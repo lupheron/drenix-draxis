@@ -168,7 +168,9 @@ export default function AttendanceDashboard() {
         {activeRequest ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Shift date {activeRequest.date} · {activeRequest.employee_name}
+              Shift date {activeRequest.date} ·{" "}
+              {activeRequest.employee_name?.trim() ||
+                `Employee #${activeRequest.employee_id}`}
             </p>
             <p className="text-sm text-foreground">{activeRequest.message}</p>
             <InputDefault
@@ -330,7 +332,8 @@ function RequestsInbox({
               {request.type} · {request.company}
             </p>
             <h3 className="mt-1 text-lg text-foreground">
-              {request.employee_name}
+              {request.employee_name?.trim() ||
+                `Employee #${request.employee_id}`}
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Shift date {request.date}

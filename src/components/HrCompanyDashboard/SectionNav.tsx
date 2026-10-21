@@ -6,7 +6,6 @@ export type HrCompanySection =
   | "analytics"
   | "lead-management"
   | "driver-database"
-  | "attendance"
   | "performance"
   | "ringcentral"
   | "monday"
@@ -35,11 +34,6 @@ const SECTIONS: {
     label: "Driver Database",
     hint: "Search · Monday history",
     companyOnly: "JM",
-  },
-  {
-    id: "attendance",
-    label: "Attendance",
-    hint: "HikVision · sheet",
   },
   {
     id: "performance",
